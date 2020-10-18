@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from typing import Tuple
 
 import torch
@@ -61,6 +62,7 @@ class Trainer:
 
     def _train_epoch(self, epoch: int) -> None:
         train_loss = 0.0
+        start_time = time.time()
 
         self.model.train()
         for step, batch in tqdm(
@@ -96,9 +98,16 @@ class Trainer:
         )
 
         if val_loss < self.best_val_loss:
-            name = "best_model.ckpt"
+            name = "best_model_scheduled.ckpt"
             torch.save(self.model.state_dict(), os.path.join(self.save_path, name))
             self.best_val_loss = val_loss
+
+        self.lr_scheduler.step(val_loss)
+
+        elapsed = time.time() - start_time
+        m, s = divmod(elapsed, 60)
+        h, m = divmod(m, 60)
+        tqdm.write("*** Epoch {} ends, it takes {}-hour {}-minute".format(epoch, h, m))
 
     def _valid_epoch(self, epoch: int) -> Tuple[float]:
         val_loss = 0.0

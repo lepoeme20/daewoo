@@ -44,10 +44,12 @@ def main(args):
     t = time.time()
     global_step, best_val_loss = trainer.train()
     train_time = time.time() - t
+    m, s = divmod(train_time, 60)
+    h, m = divmod(m, 60)
 
     print()
     print("Training Finished.")
-    print("** Time: {:.3f}".format(train_time))
+    print("** Total Time: {}-hour {}-minute".format(h, m))
     print("** Total Step: {}".format(global_step))
     print("** Best Validation Loss: {:.3f}".format(best_val_loss))
 
@@ -64,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--weight_decay", type=float, default=1e-3)
     parser.add_argument("--optimizer", type=str, default="sgd")
-    parser.add_argument("--epoch", type=int, default=100)
+    parser.add_argument("--epoch", type=int, default=200)
     parser.add_argument("--eval_step", type=int, default=50)
 
     args = parser.parse_args()
