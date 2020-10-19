@@ -1,6 +1,6 @@
 import argparse
 import random
-import time
+from collections import OrderedDict
 
 import numpy as np
 import torch
@@ -34,20 +34,26 @@ def main(args):
     }
 
     fix_seed(args.seed)
-    model = ResNet34(num_classes=args.num_classes)
+    model = ResNet34(num_classes=1)
+    checkpoint = torch.load("checkpoints/best_model_scheduled.ckpt")
+    new_state_dict = OrderedDict()
+
+    for k, v in checkpoint.items():
+        name = k[7:]  # remove 'module.' of dataparallel
+        new_state_dict[name] = v
+
+    model.load_state_dict(new_state_dict)
     trainer = Trainer(model=model, config=config)
 
-    t = time.time()
-    global_step, best_val_loss = trainer.train()
-    train_time = time.time() - t
-    m, s = divmod(train_time, 60)
-    h, m = divmod(m, 60)
+    if args.mode == "test":
+        test_loss = trainer.test()
+        print()
+        print("Test Finished.")
+        print("** Test Loss: {:.3f}".format(test_loss))
+        return
 
-    print()
-    print("Training Finished.")
-    print("** Total Time: {}-hour {}-minute".format(h, m))
-    print("** Total Step: {}".format(global_step))
-    print("** Best Validation Loss: {:.3f}".format(best_val_loss))
+    pred, true = trainer.test_values()
+    return pred, true
 
 
 if __name__ == "__main__":
@@ -64,6 +70,8 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="sgd")
     parser.add_argument("--epoch", type=int, default=200)
     parser.add_argument("--eval_step", type=int, default=50)
+
+    parser.add_argument("--mode", type=str, default="test")
 
     args = parser.parse_args()
     main(args)

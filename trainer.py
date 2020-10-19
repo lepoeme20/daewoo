@@ -120,10 +120,54 @@ class Trainer:
                 img, label = map(lambda x: x.to(self.device), batch)
 
                 output = self.model(img)
-                loss = self.criterion(output, label)
+                loss = self.criterion(output.squeeze(), label)
 
                 val_loss += loss.item()
 
         val_loss /= step + 1
 
         return val_loss
+
+    def test(self):
+        test_loss = 0.0
+
+        self.model.eval()
+        with torch.no_grad():
+            for step, batch in tqdm(
+                enumerate(self.test_loader),
+                desc="test steps",
+                total=len(self.test_loader),
+            ):
+                img, label = map(lambda x: x.to(self.device), batch)
+
+                output = self.model(img)
+                loss = self.criterion(output.squeeze(), label)
+
+                test_loss += loss.item()
+
+        test_loss /= step + 1
+
+        return test_loss
+
+    def test_values(self, length=300):
+        pred = []
+        true = []
+
+        self.model.eval()
+        with torch.no_grad():
+            for step, batch in tqdm(
+                enumerate(self.test_loader),
+                desc="test values",
+                total=len(self.test_loader),
+            ):
+                img, label = map(lambda x: x.to(self.device), batch)
+
+                output = self.model(img)
+                output = output.squeeze()
+                pred.append(output)
+                true.append(label)
+
+                if step > length:
+                    break
+
+        return pred, true
