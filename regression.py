@@ -45,7 +45,7 @@ def main(args):
 
     print()
     print("Training Finished.")
-    print("** Total Time: {}-hour {}-minute".format(h, m))
+    print("** Total Time: {}-hour {}-minute".format(int(h), int(m)))
     print("** Total Step: {}".format(global_step))
     print("** Best Validation Loss: {:.3f}".format(best_val_loss))
 
@@ -58,12 +58,12 @@ if __name__ == "__main__":
     )
     parser.add_argument("--ckpt_path", type=str, default="./checkpoints/")
     parser.add_argument("--num_classes", type=int, default=1)
-    parser.add_argument("--lr", type=float, default=0.01)
+    parser.add_argument("--lr", type=float, default=0.005)
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--weight_decay", type=float, default=1e-3)
     parser.add_argument("--optimizer", type=str, default="sgd")
     parser.add_argument("--epoch", type=int, default=200)
-    parser.add_argument("--eval_step", type=int, default=50)
+    parser.add_argument("--eval_step", type=int, default=100)
 
     args = parser.parse_args()
     main(args)

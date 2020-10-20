@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from typing import Tuple
+from typing import Tuple, List
 
 import torch
 import torch.nn as nn
@@ -107,7 +107,11 @@ class Trainer:
         elapsed = time.time() - start_time
         m, s = divmod(elapsed, 60)
         h, m = divmod(m, 60)
-        tqdm.write("*** Epoch {} ends, it takes {}-hour {}-minute".format(epoch, h, m))
+        tqdm.write(
+            "*** Epoch {} ends, it takes {}-hour {}-minute".format(
+                epoch, int(h), int(m)
+            )
+        )
 
     def _valid_epoch(self, epoch: int) -> Tuple[float]:
         val_loss = 0.0
@@ -129,7 +133,9 @@ class Trainer:
         return val_loss
 
     def test(self):
-        test_loss = 0.0
+        loss_mse = 0.0
+        loss_mae = 0.0
+        loss_mape = 0.0
 
         self.model.eval()
         with torch.no_grad():
@@ -141,13 +147,19 @@ class Trainer:
                 img, label = map(lambda x: x.to(self.device), batch)
 
                 output = self.model(img)
-                loss = self.criterion(output.squeeze(), label)
+                mseloss = self.criterion(output.squeeze(), label)
+                maeloss = self.MAE(output.squeeze(), label)
+                mapeloss = self.MAPE(output.squeeze(), label)
 
-                test_loss += loss.item()
+                loss_mse += mseloss.item()
+                loss_mae += maeloss.item()
+                loss_mape += mapeloss.item()
 
-        test_loss /= step + 1
+        loss_mse /= step + 1
+        loss_mae /= step + 1
+        loss_mape /= step + 1
 
-        return test_loss
+        return loss_mse, loss_mae, loss_mape
 
     def test_values(self, length=300):
         pred = []
@@ -171,3 +183,9 @@ class Trainer:
                     break
 
         return pred, true
+
+    def MAE(self, pred: List[torch.tensor], true: List[torch.tensor]) -> torch.tensor:
+        return torch.mean((pred - true).abs())
+
+    def MAPE(self, pred: List[torch.tensor], true: List[torch.tensor]) -> torch.tensor:
+        return torch.mean((pred - true).abs() / (true.abs() + 1e-8)) * 100  # percentage
