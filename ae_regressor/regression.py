@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 # Module
-from train_AE import create_model, get_torch_vars
+from train_ae import create_model, get_torch_vars
 from utils.build_dataloader import get_dataloader
 
 # Regressor
