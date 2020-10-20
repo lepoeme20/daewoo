@@ -29,6 +29,5 @@ class ResNet34(nn.Module):
     def forward(self, batch):
         feature = self.extractor(batch)
         feature = feature.view(feature.size(0), -1)
-
         logits = self.classifier(feature)
         return logits

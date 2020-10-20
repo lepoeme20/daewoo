@@ -30,6 +30,7 @@ def fix_seed(seed: int):
 
 
 def main(args):
+    bias = True if args.bias else False
     config = {
         "csv_path": args.path,
         "ckpt_path": args.ckpt_path,
@@ -40,17 +41,15 @@ def main(args):
         "optimizer": args.optimizer,
         "criterion": nn.MSELoss(),
         "eval_step": args.eval_step,
+        "fc_bias": bias,
     }
 
     fix_seed(args.seed)
-    model = (
-        ResNet34(num_classes=1, fc_bias=True)
-        if args.bias
-        else ResNet34(num_classes=1, fc_bias=False)
-    )
+    model = ResNet34(num_classes=args.num_classes, fc_bias=bias)
+
     checkpoint = (
         torch.load("checkpoints/best_model_bias_true.ckpt")
-        if args.bias
+        if bias
         else torch.load("checkpoints/best_model_bias_false.ckpt")
     )
     new_state_dict = OrderedDict()
@@ -81,7 +80,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--path", type=str, default="./preprocessing/brave_data_label.csv"
     )
-    parser.add_argument("--ckpt_path", type=str, default="./checkpoints_bias_false/")
+    parser.add_argument("--ckpt_path", type=str, default="./checkpoints/")
     parser.add_argument("--num_classes", type=int, default=1)
     parser.add_argument("--lr", type=float, default=0.01)
     parser.add_argument("--momentum", type=float, default=0.9)

@@ -10,6 +10,15 @@ from model import ResNet34
 from trainer import Trainer
 
 
+def str2bool(v):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
 def fix_seed(seed: int):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -31,10 +40,12 @@ def main(args):
         "optimizer": args.optimizer,
         "criterion": nn.MSELoss(),
         "eval_step": args.eval_step,
+        "fc_bias": bias,
     }
 
     fix_seed(args.seed)
-    model = ResNet34(num_classes=args.num_classes)
+    bias = True if args.bias else False
+    model = ResNet34(num_classes=args.num_classes, fc_bias=bias)
     trainer = Trainer(model=model, config=config)
 
     t = time.time()
@@ -64,6 +75,10 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="sgd")
     parser.add_argument("--epoch", type=int, default=200)
     parser.add_argument("--eval_step", type=int, default=100)
+
+    parser.add_argument(
+        "--bias", type=str2bool, default="true", help="bias in fc layer"
+    )
 
     args = parser.parse_args()
     main(args)

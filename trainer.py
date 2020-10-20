@@ -17,6 +17,7 @@ class Trainer:
     def __init__(self, model: nn.Module, config: dict):
         super().__init__()
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.bias = config["bias"]
 
         self.model = model.to(self.device)
         if torch.cuda.is_available():
@@ -98,7 +99,7 @@ class Trainer:
         )
 
         if val_loss < self.best_val_loss:
-            name = "best_model_scheduled.ckpt"
+            name = f"best_model_bias_{self.bias}.ckpt"
             torch.save(self.model.state_dict(), os.path.join(self.save_path, name))
             self.best_val_loss = val_loss
 
