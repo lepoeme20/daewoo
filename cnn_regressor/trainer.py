@@ -1,7 +1,8 @@
 import logging
 import os
+import sys
 import time
-from typing import Tuple, List
+from typing import List, Tuple
 
 import torch
 import torch.nn as nn
@@ -10,6 +11,7 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
 
 
