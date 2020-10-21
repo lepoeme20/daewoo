@@ -210,3 +210,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,jupyternotebooks,macos,python
+
+# Custom
+.vscode
+brave_data_label.csv
+check_label.py
