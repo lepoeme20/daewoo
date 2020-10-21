@@ -19,7 +19,7 @@ class Trainer:
     def __init__(self, model: nn.Module, config: dict):
         super().__init__()
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.bias = config["bias"]
+        self.bias = config["fc_bias"]
 
         self.model = model.to(self.device)
         if torch.cuda.is_available():

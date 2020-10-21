@@ -30,6 +30,7 @@ def fix_seed(seed: int):
 
 
 def main(args):
+    bias = True if args.bias else False
     config = {
         "csv_path": args.path,
         "ckpt_path": args.ckpt_path,
@@ -44,7 +45,6 @@ def main(args):
     }
 
     fix_seed(args.seed)
-    bias = True if args.bias else False
     model = ResNet34(num_classes=args.num_classes, fc_bias=bias)
     trainer = Trainer(model=model, config=config)
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=711)
     parser.add_argument(
-        "--path", type=str, default="./preprocessing/brave_data_label.csv"
+        "--path", type=str, default="../preprocessing/brave_data_label.csv"
     )
     parser.add_argument("--ckpt_path", type=str, default="./checkpoints/")
     parser.add_argument("--num_classes", type=int, default=1)
