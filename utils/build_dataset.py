@@ -27,7 +27,7 @@ class BuildDataset(Dataset):
         elif self.transform == 1:
             transform = transforms.Compose([
                 transforms.ToTensor(),
-                transforms.Normalize((0.5), (0.5)),
+                transforms.Normalize((0.3352), (0.0647)),
             ])
         else:
             # z score scaling
