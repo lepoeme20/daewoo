@@ -43,12 +43,12 @@ class AE(nn.Module):
         super(AE, self).__init__()
 
         self.encoder = nn.Sequential(
-            nn.Linear(1028, 128),
-            nn.LeakyReLU(True),
+            nn.Linear(1024, 128),
+            nn.ReLU(True),
             nn.Linear(128, 64),
-            nn.LeakyReLU(True),
+            nn.ReLU(True),
             nn.Linear(64, 32),
-            nn.LeakyReLU(True)
+            nn.ReLU(True)
         )
 
         self.decoder = nn.Sequential(
@@ -56,7 +56,7 @@ class AE(nn.Module):
             nn.LeakyReLU(True),
             nn.Linear(64, 128),
             nn.LeakyReLU(True),
-            nn.Linear(128, 1028)
+            nn.Linear(128, 1024)
         )
 
     def forward(self, x):
