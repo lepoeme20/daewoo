@@ -121,6 +121,10 @@ def main():
                     print(f'[Trn] {epoch+1}/{args.epochs}, {i+1}/{len(trn_loader)} \
                         loss: {(running_loss/args.log_interval):.5f}')
                     running_loss = 0.0
+            save_image(
+                torchvision.utils.make_grid(inputs),
+                os.path.join(fig_save_path, f'original_epoch_{epoch}.jpg')
+                )
 
             # Validate Model
             print('\n\n<Validation>')
@@ -141,7 +145,10 @@ def main():
                     if idx % args.log_interval == args.log_interval-1:
                         print(f'[Dev] {epoch+1}/{args.epochs}, {idx+1}/{len(trn_loader)} \
                             loss: {dev_loss:.5f}')
-
+            save_image(
+                torchvision.utils.make_grid(inputs.view(-1, args.batch_size, args.img_size, args.img_size)),
+                os.path.join(fig_save_path, f'reconstructed_epoch_{epoch}.jpg')
+                )
             if dev_loss < best_loss:
                 best_loss = dev_loss
                 print(f"The best model is saved / Loss: {dev_loss:.5f}")
@@ -151,18 +158,6 @@ def main():
                     'trained_epoch': epoch,
                 }, os.path.join(model_save_path, 'autoencoder.pkl'))
 
-            dataiter = iter(dev_loader)
-            images, _ = dataiter.next()
-            _, decoded_imgs = autoencoder(images.view(images.size(0), -1).to(args.device))
-
-            save_image(
-                torchvision.utils.make_grid(images),
-                os.path.join(fig_save_path, f'original_epoch_{epoch}.jpg')
-                )
-            save_image(
-                torchvision.utils.make_grid(decoded_imgs.view(-1, args.batch_size, args.img_size, args.img_size)),
-                os.path.join(fig_save_path, f'reconstructed_epoch_{epoch}.jpg')
-                )
         print('Finished Training')
 
 
