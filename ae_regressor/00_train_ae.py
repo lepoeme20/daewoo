@@ -51,7 +51,7 @@ def main():
         "--batch-size", type=int, help="Batch size"
     )
     parser.add_argument(
-        "--epochs", type=int, default=100, help="# of training epochs"
+        "--epochs", type=int, default=30, help="# of training epochs"
     )
     parser.add_argument(
         "--log-interval", type=int, default=200, help="Set interval for logging"
@@ -106,10 +106,10 @@ def main():
             running_loss = 0.0
             _dev_loss = 0.0
             for i, (inputs, _) in enumerate(trn_loader):
-                inputs = inputs.view(inputs.size(0), -1).to(args.device)
+                f_inputs = inputs.view(inputs.size(0), -1).to(args.device)
                 # ============ Forward ============
-                _, outputs = autoencoder(inputs)
-                loss = criterion(outputs, inputs)
+                _, outputs = autoencoder(f_inputs)
+                loss = criterion(outputs, f_inputs)
                 # ============ Backward ============
                 optimizer.zero_grad()
                 loss.backward()
@@ -121,6 +121,7 @@ def main():
                     print(f'[Trn] {epoch+1}/{args.epochs}, {i+1}/{len(trn_loader)} \
                         loss: {(running_loss/args.log_interval):.5f}')
                     running_loss = 0.0
+
             save_image(
                 torchvision.utils.make_grid(inputs),
                 os.path.join(fig_save_path, f'original_epoch_{epoch}.jpg')
@@ -132,21 +133,21 @@ def main():
 
             for idx, (inputs, _) in enumerate(dev_loader):
                 # step progress
-                inputs = inputs = inputs.view(inputs.size(0), -1).to(args.device)
+                f_inputs = inputs.view(inputs.size(0), -1).to(args.device)
 
                 with torch.no_grad():
                     # ============ Forward ============
-                    _, outputs = autoencoder(inputs)
-                    loss = criterion(outputs, inputs)
+                    _, outputs = autoencoder(f_inputs)
+                    loss = criterion(outputs, f_inputs)
 
                     # ============ Logging ============
                     _dev_loss += loss
                     dev_loss = _dev_loss/(idx+1)
                     if idx % args.log_interval == args.log_interval-1:
-                        print(f'[Dev] {epoch+1}/{args.epochs}, {idx+1}/{len(trn_loader)} \
+                        print(f'[Dev] {epoch+1}/{args.epochs}, {idx+1}/{len(dev_loader)} \
                             loss: {dev_loss:.5f}')
             save_image(
-                torchvision.utils.make_grid(inputs.view(-1, args.batch_size, args.img_size, args.img_size)),
+                torchvision.utils.make_grid(inputs),
                 os.path.join(fig_save_path, f'reconstructed_epoch_{epoch}.jpg')
                 )
             if dev_loss < best_loss:
