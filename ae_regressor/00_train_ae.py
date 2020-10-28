@@ -99,12 +99,16 @@ def main():
     else:
         # Define an optimizer and criterion
         criterion = nn.MSELoss()
-        optimizer = optim.Adam(autoencoder.parameters())
+        optimizer = optim.Adam(autoencoder.parameters(), lr=1e-2)
         best_loss = 1000
 
         for epoch in range(args.epochs):
             running_loss = 0.0
             _dev_loss = 0.0
+            dev_loss = None
+            inputs = None
+
+            print('\n\n<Training>')
             for i, (inputs, _) in enumerate(trn_loader):
                 f_inputs = inputs.view(inputs.size(0), -1).to(args.device)
                 # ============ Forward ============
@@ -150,6 +154,7 @@ def main():
                 torchvision.utils.make_grid(inputs),
                 os.path.join(fig_save_path, f'reconstructed_epoch_{epoch}.jpg')
                 )
+
             if dev_loss < best_loss:
                 best_loss = dev_loss
                 print(f"The best model is saved / Loss: {dev_loss:.5f}")
