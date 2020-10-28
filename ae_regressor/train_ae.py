@@ -1,6 +1,6 @@
 from utils.build_dataloader import get_dataloader
 from torchvision.utils import save_image
-from model_ae import Autoencoder
+from model_convae import Autoencoder
 
 # Numpy
 import numpy as np
