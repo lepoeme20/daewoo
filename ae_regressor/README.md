@@ -31,8 +31,6 @@ python ae_regressor/00_train_ae.py --norm-type 1 --batch-size 256 --iid
 python ae_regressor/00_train_ae.py --norm-type 1 --batch-size 256 --test
 ```
 
-
-
 ### 2) Regression 진행
 ```bash
 python ae_regressor/00_train_ae.py --norm-type 1 --batch-size 1024
