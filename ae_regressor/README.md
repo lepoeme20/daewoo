@@ -33,6 +33,6 @@ python ae_regressor/00_train_ae.py --norm-type 1 --batch-size 256 --test
 
 ### 2) Regression 진행
 ```bash
-python ae_regressor/00_train_ae.py --norm-type 1 --batch-size 1024
+python ae_regressor/01_regression.py --norm-type 1 --batch-size 1024
 ```
 지정 가능한 파라미터와 사용 방법은 상기 1) 과 동일함
