@@ -13,7 +13,7 @@ class ResNet34(nn.Module):
     """
 
     def __init__(
-        self, num_classes: int, pretrained: bool = False, fc_bias: bool = True
+        self, num_classes: int, pretrained: bool = False, fc_bias: bool = False
     ):
         super(ResNet34, self).__init__()
         self.resnet = resnet34(pretrained=pretrained)

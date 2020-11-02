@@ -86,7 +86,6 @@ class Trainer:
             enumerate(self.train_loader), desc="steps", total=len(self.train_loader)
         ):
             img, label = map(lambda x: x.to(self.device), batch)
-
             output = self.model(img)
 
             self.optimizer.zero_grad()
@@ -180,7 +179,7 @@ class Trainer:
 
         return loss_mse, loss_mae, loss_mape
 
-    def test_values(self, length: int = 300):
+    def test_values(self, length: int = 50):
         pred = []
         true = []
 

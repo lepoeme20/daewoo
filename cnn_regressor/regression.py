@@ -68,7 +68,7 @@ if __name__ == "__main__":
         default=0,
         help="0:no-norm / 1:whole-img-norm / 2:per-img-norm",
     )
-    parser.add_argument("--iid", type=str2bool, default="false")
+    parser.add_argument("--iid", type=str2bool, default="true")
     parser.add_argument(
         "--bias", type=str2bool, default="false", help="bias in fc layer"
     )
