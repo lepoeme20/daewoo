@@ -133,19 +133,26 @@ def main():
         x_train, y_train = get_data(trn_loader, args.device, encoder)
 
         # gird search 범위 지정
+        # param_grid = {
+        #     'kernel': ('linear', 'poly', 'rbf'),
+        #     'C': [1., 5., 10.], # Regularization parameter
+        #     'degree': [3, 8], # Degree of the polynomial kernel function
+        #     'epsilon': [0.1, 0.2],
+        #     'gamma': ('auto','scale')
+        #     }
         param_grid = {
-            'kernel': ('linear', 'poly', 'rbf'),
-            'C': [1., 5., 10.], # Regularization parameter
-            'degree': [3, 8], # Degree of the polynomial kernel function
-            'epsilon': [0.1, 0.2],
-            'gamma': ('auto','scale')
+            'kernel': ('linear', 'poly'),
+            'C': [1.], # Regularization parameter
+            'degree': [3], # Degree of the polynomial kernel function
+            'epsilon': [0.1],
+            'gamma': ('auto')
             }
         # grid_search 지정
         grid_search = GridSearchCV(
             estimator=SVR(),
             param_grid=param_grid,
             cv=5,
-            n_jobs=128,
+            n_jobs=64,
             scoring=make_scorer(mean_absolute_error),
             return_train_score=True,
             verbose=10)
