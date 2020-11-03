@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 # Regressor
 from sklearn.svm import SVR
+
 from sklearn.metrics import mean_absolute_error, make_scorer
 from sklearn.linear_model import LinearRegression as LR
 from sklearn.model_selection import GridSearchCV
@@ -15,6 +16,8 @@ import argparse
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
 from ae_regressor.model_ae import AE
+
+import cupy as xp
 
 def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
@@ -36,9 +39,9 @@ def get_data(data_loader, device, model):
         encoded = model(inputs.view(inputs.size(0), -1).to(device))
 <<<<<<< HEAD
         latent_vector = encoded.cpu().data.numpy().tolist()
+        #latent_vector = xp.asarray(encoded.cpu().data.numpy().tolist())
         x.extend(latent_vector)
         y.extend(labels.cpu().data.numpy().tolist())
-<<<<<<< HEAD
         #labels = xp.asarray(labels.cpu().data.numpy().tolist())
         #y.extend(labels)
 =======
@@ -46,8 +49,6 @@ def get_data(data_loader, device, model):
         x = np.r_[x, latent_vector]
         y = np.r_[y, labels.cpu().data.numpy()]
 >>>>>>> 1a17c1ef336fc88640e3dc2a0ab3ade507d88ecd
-=======
->>>>>>> parent of 08e474e... ignore this change
         if i%20 == 0:
             print(f'Progress: [{i}/{len(data_loader)}]')
     # inputs, labels = next(iter(data_loader))
@@ -153,9 +154,9 @@ def main():
         param_grid = {
 <<<<<<< HEAD
             'kernel': ('linear', 'poly', 'rbf'),
-            'C': [1., 5., 10.], # Regularization parameter
-            'degree': [3, 8], # Degree of the polynomial kernel function
-            'epsilon': [0.1, 0.2],
+            'C': [1.], # Regularization parameter
+            'degree': [3], # Degree of the polynomial kernel function
+            'epsilon': [0.1],
             'gamma': ('auto','scale')
 =======
             'kernel': ['linear', 'poly', 'rbf'],
@@ -169,14 +170,10 @@ def main():
             param_grid=param_grid,
             cv=5,
 <<<<<<< HEAD
-<<<<<<< HEAD
             n_jobs=32,
 =======
             n_jobs=64,
 >>>>>>> 1a17c1ef336fc88640e3dc2a0ab3ade507d88ecd
-=======
-            n_jobs=128,
->>>>>>> parent of 08e474e... ignore this change
             scoring=make_scorer(mean_absolute_error),
             return_train_score=True,
             verbose=10)
