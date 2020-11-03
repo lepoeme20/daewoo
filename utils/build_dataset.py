@@ -47,7 +47,6 @@ class BuildDataset(Dataset):
             frame -= mean
             frame /= std
             transform = transforms.Compose([
-                transforms.ToTensor(),
                 transforms.ToPILImage(),
                 transforms.Resize((self.img_size, self.img_size)),
                 transforms.ToTensor(),
