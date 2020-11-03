@@ -51,7 +51,7 @@ def main():
         "--batch-size", type=int, help="Batch size"
     )
     parser.add_argument(
-        "--epochs", type=int, default=30, help="# of training epochs"
+        "--epochs", type=int, default=50, help="# of training epochs"
     )
     parser.add_argument(
         "--log-interval", type=int, default=200, help="Set interval for logging"

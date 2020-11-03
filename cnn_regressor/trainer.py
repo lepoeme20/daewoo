@@ -13,18 +13,26 @@ from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
+from model_utils import EarlyStopping
 
 
 class Trainer:
     def __init__(self, model: nn.Module, config: dict):
         super().__init__()
+        ## model param
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.bias = config["fc_bias"]
-
+        self.iid = config["iid"]
+        self.transform = config["transform"]
+        self.path = config["csv_path"]
         self.model = model.to(self.device)
         if torch.cuda.is_available():
             self.model = nn.DataParallel(self.model)
 
+        ## training param
+        self.epochs = config["epoch"]
+        self.criterion = config["criterion"]
+        self.batch_size = config["batch_size"]
         self.lr = config["lr"]
         if config["optimizer"] == "sgd":
             self.optimizer = optim.SGD(
@@ -36,34 +44,40 @@ class Trainer:
         self.lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.1, patience=20
         )
-
-        self.epochs = config["epoch"]
-        self.criterion = config["criterion"]
-
-        self.path = config["csv_path"]
         self.train_loader, self.val_loader, self.test_loader = self.get_dataloader()
 
-        # self.logger = logging.getLogger(__name__)
-        # self.logger.setLevel(logging.INFO)
+        ## model saving param
         self.save_path = config["ckpt_path"]
         if not os.path.exists(self.save_path):
             os.mkdir(self.save_path)
         self.writer = SummaryWriter(self.save_path)
         self.global_step = 0
         self.eval_step = config["eval_step"]
-        self.best_val_loss = 1e8
+        # self.best_val_loss = 1e8
+        self.earlystopping = EarlyStopping(
+            verbose=True, path=os.path.join(self.save_path, "best_model.ckpt")
+        )
 
     def get_dataloader(self) -> Tuple[DataLoader]:
-        return get_dataloader(self.path, iid=False)
+        return get_dataloader(
+            self.path,
+            batch_size=self.batch_size,
+            iid=self.iid,
+            transform=self.transform,
+        )
 
-    def train(self) -> Tuple[int, float]:
+    def train(self) -> None:  # -> Tuple[int, float]:
         for epoch in tqdm(range(self.epochs), desc="epoch"):
-            result = self._train_epoch(epoch)
+            val_loss = self._train_epoch(epoch)
+            self.earlystopping(val_loss, self.model)
+            if self.earlystopping.early_stop:
+                print("Early Stopped.")
+                break
 
         self.writer.close()
-        return self.global_step, self.best_val_loss
+        # return self.global_step, self.best_val_loss
 
-    def _train_epoch(self, epoch: int) -> None:
+    def _train_epoch(self, epoch: int) -> float:
         train_loss = 0.0
         start_time = time.time()
 
@@ -72,7 +86,6 @@ class Trainer:
             enumerate(self.train_loader), desc="steps", total=len(self.train_loader)
         ):
             img, label = map(lambda x: x.to(self.device), batch)
-
             output = self.model(img)
 
             self.optimizer.zero_grad()
@@ -100,10 +113,10 @@ class Trainer:
             "** global step: {}, val loss: {:.3f}".format(self.global_step, val_loss)
         )
 
-        if val_loss < self.best_val_loss:
-            name = f"best_model_bias_{self.bias}.ckpt"
-            torch.save(self.model.state_dict(), os.path.join(self.save_path, name))
-            self.best_val_loss = val_loss
+        # if val_loss < self.best_val_loss:
+        #     name = f"best_model_bias_{self.bias}.ckpt"
+        #     torch.save(self.model.state_dict(), os.path.join(self.save_path, name))
+        #     self.best_val_loss = val_loss
 
         self.lr_scheduler.step(val_loss)
 
@@ -116,7 +129,9 @@ class Trainer:
             )
         )
 
-    def _valid_epoch(self, epoch: int) -> Tuple[float]:
+        return val_loss
+
+    def _valid_epoch(self, epoch: int) -> float:
         val_loss = 0.0
 
         self.model.eval()
@@ -135,7 +150,7 @@ class Trainer:
 
         return val_loss
 
-    def test(self):
+    def test(self) -> Tuple[float]:
         loss_mse = 0.0
         loss_mae = 0.0
         loss_mape = 0.0
@@ -164,7 +179,7 @@ class Trainer:
 
         return loss_mse, loss_mae, loss_mape
 
-    def test_values(self, length=300):
+    def test_values(self, length: int = 50):
         pred = []
         true = []
 

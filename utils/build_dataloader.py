@@ -21,13 +21,13 @@ def get_dataloader(csv_path, batch_size, iid=False, transform=2, img_size=224):
     tst_dataset = BuildDataset(tst, transform, img_size)
 
     trn_dataloader = torch.utils.data.DataLoader(
-        trn_dataset, batch_size=batch_size, shuffle=True, num_workers=0
+        trn_dataset, batch_size=batch_size, shuffle=True, num_workers=64
     )
     dev_dataloader = torch.utils.data.DataLoader(
-        dev_dataset, batch_size=batch_size, shuffle=False, num_workers=0
+        dev_dataset, batch_size=batch_size, shuffle=False, num_workers=64
     )
     tst_dataloader = torch.utils.data.DataLoader(
-        tst_dataset, batch_size=batch_size, shuffle=False, num_workers=0
+        tst_dataset, batch_size=batch_size, shuffle=False, num_workers=64
     )
 
     return trn_dataloader, dev_dataloader, tst_dataloader

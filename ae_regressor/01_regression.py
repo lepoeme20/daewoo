@@ -33,18 +33,29 @@ def create_model(args):
 
 def get_data(data_loader, device, model):
     print(f"Latent vectors will be extracted on {device}")
-    x = []
-    y = []
+    x = np.empty([0, 32])
+    y = np.empty([0])
     for i, (inputs, labels) in enumerate((data_loader)):
         encoded = model(inputs.view(inputs.size(0), -1).to(device))
+<<<<<<< HEAD
         latent_vector = encoded.cpu().data.numpy().tolist()
         #latent_vector = xp.asarray(encoded.cpu().data.numpy().tolist())
         x.extend(latent_vector)
         y.extend(labels.cpu().data.numpy().tolist())
         #labels = xp.asarray(labels.cpu().data.numpy().tolist())
         #y.extend(labels)
+=======
+        latent_vector = encoded.cpu().data.numpy()
+        x = np.r_[x, latent_vector]
+        y = np.r_[y, labels.cpu().data.numpy()]
+>>>>>>> 1a17c1ef336fc88640e3dc2a0ab3ade507d88ecd
         if i%20 == 0:
             print(f'Progress: [{i}/{len(data_loader)}]')
+    # inputs, labels = next(iter(data_loader))
+    # encoded = model(inputs.view(inputs.size(0), -1).to(device))
+    # latent_vector = encoded.cpu().data.numpy()
+    # x = np.r_[x, latent_vector]
+    # y = np.r_[y, labels.cpu().data.numpy()]
     return x, y
 
 
@@ -139,19 +150,30 @@ def main():
         x_train, y_train = get_data(trn_loader, args.device, encoder)
 
         # gird search 범위 지정
+        bound = [0.001, 0.01, 0.1, 1., 10, 100]
         param_grid = {
+<<<<<<< HEAD
             'kernel': ('linear', 'poly', 'rbf'),
             'C': [1.], # Regularization parameter
             'degree': [3], # Degree of the polynomial kernel function
             'epsilon': [0.1],
             'gamma': ('auto','scale')
+=======
+            'kernel': ['linear', 'poly', 'rbf'],
+            'C': bound, # Regularization parameter
+            'gamma': bound
+>>>>>>> 1a17c1ef336fc88640e3dc2a0ab3ade507d88ecd
             }
         # grid_search 지정
         grid_search = GridSearchCV(
             estimator=SVR(),
             param_grid=param_grid,
             cv=5,
+<<<<<<< HEAD
             n_jobs=32,
+=======
+            n_jobs=64,
+>>>>>>> 1a17c1ef336fc88640e3dc2a0ab3ade507d88ecd
             scoring=make_scorer(mean_absolute_error),
             return_train_score=True,
             verbose=10)
@@ -171,6 +193,10 @@ def main():
         mae = mean_absolute_error(y_train, y_pred)
         mape = mean_absolute_percentage_error(y_true=y_train, y_pred=y_pred)
         print(f"[Trainig] MAE:{mae}, MAPE:{mape}")
+
+        performance = {'mae': mae, 'mape': mape}
+        with open(os.path.join(model_path, 'dev_performance.pkl')) as f:
+            pickle.dump(performance, f)
 
         save_path = os.path.join(model_path, 'regression.pkl')
         with open(save_path, 'wb') as f:
