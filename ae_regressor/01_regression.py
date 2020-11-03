@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 # Regressor
 from sklearn.svm import SVR
+
 from sklearn.metrics import mean_absolute_error, make_scorer
 from sklearn.linear_model import LinearRegression as LR
 from sklearn.model_selection import GridSearchCV
@@ -15,6 +16,8 @@ import argparse
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
 from ae_regressor.model_ae import AE
+
+import cupy as xp
 
 def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
@@ -35,8 +38,11 @@ def get_data(data_loader, device, model):
     for i, (inputs, labels) in enumerate((data_loader)):
         encoded = model(inputs.view(inputs.size(0), -1).to(device))
         latent_vector = encoded.cpu().data.numpy().tolist()
+        #latent_vector = xp.asarray(encoded.cpu().data.numpy().tolist())
         x.extend(latent_vector)
         y.extend(labels.cpu().data.numpy().tolist())
+        #labels = xp.asarray(labels.cpu().data.numpy().tolist())
+        #y.extend(labels)
         if i%20 == 0:
             print(f'Progress: [{i}/{len(data_loader)}]')
     return x, y
@@ -135,9 +141,9 @@ def main():
         # gird search 범위 지정
         param_grid = {
             'kernel': ('linear', 'poly', 'rbf'),
-            'C': [1., 5., 10.], # Regularization parameter
-            'degree': [3, 8], # Degree of the polynomial kernel function
-            'epsilon': [0.1, 0.2],
+            'C': [1.], # Regularization parameter
+            'degree': [3], # Degree of the polynomial kernel function
+            'epsilon': [0.1],
             'gamma': ('auto','scale')
             }
         # grid_search 지정
@@ -145,7 +151,7 @@ def main():
             estimator=SVR(),
             param_grid=param_grid,
             cv=5,
-            n_jobs=128,
+            n_jobs=32,
             scoring=make_scorer(mean_absolute_error),
             return_train_score=True,
             verbose=10)
