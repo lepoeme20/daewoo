@@ -30,15 +30,20 @@ def create_model(args):
 
 def get_data(data_loader, device, model):
     print(f"Latent vectors will be extracted on {device}")
-    x = []
-    y = []
+    x = np.empty([0, 32])
+    y = np.empty([0])
     for i, (inputs, labels) in enumerate((data_loader)):
         encoded = model(inputs.view(inputs.size(0), -1).to(device))
-        latent_vector = encoded.cpu().data.numpy().tolist()
-        x.extend(latent_vector)
-        y.extend(labels.cpu().data.numpy().tolist())
+        latent_vector = encoded.cpu().data.numpy()
+        x = np.r_[x, latent_vector]
+        y = np.r_[y, labels.cpu().data.numpy()]
         if i%20 == 0:
             print(f'Progress: [{i}/{len(data_loader)}]')
+    # inputs, labels = next(iter(data_loader))
+    # encoded = model(inputs.view(inputs.size(0), -1).to(device))
+    # latent_vector = encoded.cpu().data.numpy()
+    # x = np.r_[x, latent_vector]
+    # y = np.r_[y, labels.cpu().data.numpy()]
     return x, y
 
 
@@ -133,19 +138,11 @@ def main():
         x_train, y_train = get_data(trn_loader, args.device, encoder)
 
         # gird search 범위 지정
-        # param_grid = {
-        #     'kernel': ('linear', 'poly', 'rbf'),
-        #     'C': [1., 5., 10.], # Regularization parameter
-        #     'degree': [3, 8], # Degree of the polynomial kernel function
-        #     'epsilon': [0.1, 0.2],
-        #     'gamma': ('auto','scale')
-        #     }
+        bound = [0.001, 0.01, 0.1, 1., 10, 100]
         param_grid = {
-            'kernel': ('linear', 'poly'),
-            'C': [1.], # Regularization parameter
-            'degree': [3], # Degree of the polynomial kernel function
-            'epsilon': [0.1],
-            'gamma': ('auto')
+            'kernel': ['linear', 'poly', 'rbf'],
+            'C': bound, # Regularization parameter
+            'gamma': bound
             }
         # grid_search 지정
         grid_search = GridSearchCV(
@@ -172,6 +169,10 @@ def main():
         mae = mean_absolute_error(y_train, y_pred)
         mape = mean_absolute_percentage_error(y_true=y_train, y_pred=y_pred)
         print(f"[Trainig] MAE:{mae}, MAPE:{mape}")
+
+        performance = {'mae': mae, 'mape': mape}
+        with open(os.path.join(model_path, 'dev_performance.pkl')) as f:
+            pickle.dump(performance, f)
 
         save_path = os.path.join(model_path, 'regression.pkl')
         with open(save_path, 'wb') as f:
