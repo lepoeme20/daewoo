@@ -39,11 +39,7 @@ def get_data(data_loader, device, model):
         y = np.r_[y, labels.cpu().data.numpy()]
         if i%20 == 0:
             print(f'Progress: [{i}/{len(data_loader)}]')
-    # inputs, labels = next(iter(data_loader))
-    # encoded = model(inputs.view(inputs.size(0), -1).to(device))
-    # latent_vector = encoded.cpu().data.numpy()
-    # x = np.r_[x, latent_vector]
-    # y = np.r_[y, labels.cpu().data.numpy()]
+
     return x, y
 
 
