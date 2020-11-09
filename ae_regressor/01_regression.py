@@ -144,7 +144,8 @@ def main(args):
 
 if __name__ == '__main__':
     # Set random seed for reproducibility
-    SEED = 87
+    h_params = config.get_config()
+    SEED = h_params.seed
     np.random.seed(SEED)
     torch.manual_seed(SEED)
     if torch.cuda.is_available():
