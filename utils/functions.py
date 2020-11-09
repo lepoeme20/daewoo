@@ -20,7 +20,7 @@ def create_model(args):
 
 def get_original_data(data, sampling_ratio):
     img_path = data['image'].values
-    y = data['label'].values.reshape(-1, 1)
+    y = data['label'].values
     x = np.empty([0, 32*32])
 
     if sampling_ratio != 1.:
