@@ -3,6 +3,7 @@ import sys
 import torch
 # Regressor
 from sklearn.svm import SVR
+from sklearn.utils import parallel_backend
 from sklearn.metrics import mean_absolute_error, make_scorer
 from sklearn.model_selection import GridSearchCV
 import pickle
@@ -110,12 +111,13 @@ def main(args):
             estimator=SVR(),
             param_grid=param_grid,
             cv=5,
-            n_jobs=64,
+            n_jobs=args.num_parallel,
             scoring=make_scorer(mean_absolute_error),
             return_train_score=True,
             verbose=10)
         # model fitting
-        grid_search.fit(x_train, y_train)
+        with parallel_backend('multiprocessing'):
+            grid_search.fit(x_train, y_train)
 
         # printing
         print(grid_search.best_params_)
@@ -132,7 +134,7 @@ def main(args):
         print(f"[Trainig] MAE:{mae}, MAPE:{mape}")
 
         performance = {'mae': mae, 'mape': mape}
-        with open(os.path.join(model_path, 'dev_performance.pkl')) as f:
+        with open(os.path.join(model_path, 'dev_performance.pkl'), 'wb') as f:
             pickle.dump(performance, f)
 
         save_path = os.path.join(model_path, 'regression.pkl')
