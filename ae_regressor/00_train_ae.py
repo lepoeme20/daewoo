@@ -42,12 +42,11 @@ def main(args):
         autoencoder.module.load_state_dict(checkpoint['model'])
 
         for i, (inputs,_) in enumerate(tst_loader):
-            f_inputs = inputs.view(inputs.size(0), -1).to(args.device)
+            inputs = F.build_input(args, inputs)
             # ============ Forward ============
             criterion = nn.MSELoss()
-            #_, outputs = autoencoder(inputs.view(inputs.size(0), -1).to(args.device))
-            _, outputs = autoencoder(f_inputs)
-            loss = criterion(outputs, f_inputs)
+            _, outputs = autoencoder(inputs)
+            loss = criterion(outputs, inputs)
             if i % 200 == 0:
                 print(f'loss btw test image - reconstructed: {loss:.4f}')
         exit(0)
@@ -55,7 +54,7 @@ def main(args):
     else:
         # Define an optimizer and criterion
         criterion = nn.MSELoss()
-        optimizer = optim.Adam(autoencoder.parameters(), lr=1e-2)
+        optimizer = optim.Adam(autoencoder.parameters(), lr=0.0002)
         best_loss = 1000
 
         for epoch in range(args.epochs):
@@ -66,10 +65,10 @@ def main(args):
 
             print('\n\n<Training>')
             for i, (inputs, _) in enumerate(trn_loader):
-                f_inputs = inputs.view(inputs.size(0), -1).to(args.device)
+                inputs = F.build_input(args, inputs)
                 # ============ Forward ============
-                _, outputs = autoencoder(f_inputs)
-                loss = criterion(outputs, f_inputs)
+                _, outputs = autoencoder(inputs)
+                loss = criterion(outputs, inputs)
                 # ============ Backward ============
                 optimizer.zero_grad()
                 loss.backward()
@@ -93,12 +92,12 @@ def main(args):
 
             for idx, (inputs, _) in enumerate(dev_loader):
                 # step progress
-                f_inputs = inputs.view(inputs.size(0), -1).to(args.device)
+                inputs = F.build_input(args, inputs)
 
                 with torch.no_grad():
                     # ============ Forward ============
-                    _, outputs = autoencoder(f_inputs)
-                    loss = criterion(outputs, f_inputs)
+                    _, outputs = autoencoder(inputs)
+                    loss = criterion(outputs, inputs)
 
                     # ============ Logging ============
                     _dev_loss += loss
@@ -125,11 +124,10 @@ def main(args):
 
 if __name__ == '__main__':
     # Set random seed for reproducibility
-    SEED = 87
+    h_params = config.get_config()
+    SEED = h_params.seed
     np.random.seed(SEED)
     torch.manual_seed(SEED)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(SEED)
-
-    h_params = config.get_config()
     main(h_params)

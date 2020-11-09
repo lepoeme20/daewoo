@@ -6,10 +6,15 @@ import numpy as np
 import cv2
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from ae_regressor.model_ae import AE
+from ae_regressor.model_ae import AE, CAE
 
 def create_model(args):
-    autoencoder = AE()
+    if args.cae:
+        autoencoder = CAE()
+        print("CAE will be used")
+    else:
+        autoencoder = AE()
+        print("Linear AE will be used")
     if torch.cuda.is_available():
         autoencoder = nn.DataParallel(autoencoder)
 
@@ -54,3 +59,6 @@ def get_data(data_loader, device, model):
         if i%20 == 0:
             print(f'Progress: [{i}/{len(data_loader)}]')
     return x, y
+
+def build_input(args, inputs):
+    return inputs.to(args.device) if args.cae else inputs.view(inputs.size(0), -1).to(args.device)

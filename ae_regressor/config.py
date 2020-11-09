@@ -26,6 +26,9 @@ def set_parser(parser):
     base_args.add_argument(
         "--batch-size", type=int, help="Batch size"
     )
+    base_args.add_argument(
+        "--seed", type=int, default=22, help="seed number"
+    )
     ae_args = parser.add_argument_group('Auto Encoder arguments')
     ae_args.add_argument(
         "--img-size", type=int, default=32, help='image size for Auto-encoder (default: 32x32)'
@@ -35,6 +38,9 @@ def set_parser(parser):
     )
     ae_args.add_argument(
         "--log-interval", type=int, default=200, help="Set interval for logging"
+    )
+    ae_args.add_argument(
+        "--cae", action="store_true", default=False, help="CAE or not (linear AE)"
     )
     rg_args = parser.add_argument_group('Regression arguments')
     rg_args.add_argument(

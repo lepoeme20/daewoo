@@ -9,6 +9,18 @@
 """
 import torch.nn as nn
 
+class Interpolate(nn.Module):
+    def __init__(self, scale_factor, mode):
+        super(Interpolate, self).__init__()
+        self.interp = nn.functional.interpolate
+        self.scale_factor = scale_factor
+        self.mode = mode
+        
+    def forward(self, x):
+        x = self.interp(x, scale_factor=self.scale_factor, mode=self.mode, align_corners=True)
+        return x
+
+
 class CAE(nn.Module):
     def __init__(self):
         super(CAE, self).__init__()
@@ -16,26 +28,31 @@ class CAE(nn.Module):
         # Output size: [batch, 3, 32, 32]
 
         self.encoder = nn.Sequential(
-            nn.Conv2d(1, 12, 10, stride=1, padding=2),
+            nn.Conv2d(1, 16, 4, 2, 1),
             nn.ReLU(),
-            nn.Conv2d(12, 24, 10, stride=1, padding=2),
+            nn.Conv2d(16, 32, 4, 2, 1),
             nn.ReLU(),
-            nn.Conv2d(24, 48, 10, stride=1, padding=2),
+            nn.Conv2d(32, 64, 4, 2, 1),
             nn.ReLU(),
         )
 
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(48, 24, 10, stride=1, padding=2),
+            Interpolate(scale_factor=2, mode='bilinear'),
+            nn.Conv2d(64, 32, 3, 1, 1),
+            nn.BatchNorm2d(32, 0.8),
             nn.ReLU(),
-            nn.ConvTranspose2d(24, 12, 10, stride=1, padding=2),
+            Interpolate(scale_factor=2, mode='bilinear'),
+            nn.Conv2d(32, 16, 3, 1, 1),
+            nn.BatchNorm2d(16, 0.8),
             nn.ReLU(),
-            nn.ConvTranspose2d(12, 1, 10, stride=1, padding=2),
+            Interpolate(scale_factor=2, mode='bilinear'),
+            nn.Conv2d(16, 1, 3, 1, 1),
             nn.Sigmoid(),
         )
 
     def forward(self, x):
-        encoded = self.encoder(x)  # encode.shape = torch.Size([32, 1, 17, 17])
-        decoded = self.decoder(encoded) # decode.shape = torch.Size([32, 48, 17, 17])
+        encoded = self.encoder(x)  # encode.shape = torch.Size([BS, 64, 4, 4])
+        decoded = self.decoder(encoded) # decode.shape = torch.Size([BS, 1, 32, 32])
         return encoded, decoded
 
 class AE(nn.Module):
@@ -45,16 +62,16 @@ class AE(nn.Module):
         self.encoder = nn.Sequential(
             nn.Linear(1024, 128),
             nn.ReLU(True),
-            nn.Linear(128, 64),
+            nn.Linear(128, 64, bias=False),
             nn.ReLU(True),
-            nn.Linear(64, 32),
+            nn.Linear(64, 32, bias=False),
             nn.ReLU(True)
         )
 
         self.decoder = nn.Sequential(
-            nn.Linear(32, 64),
+            nn.Linear(32, 64, bias=False),
             nn.LeakyReLU(True),
-            nn.Linear(64, 128),
+            nn.Linear(64, 128, bias=False),
             nn.LeakyReLU(True),
             nn.Linear(128, 1024),
             nn.Sigmoid()

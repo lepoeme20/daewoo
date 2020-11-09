@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset
 from torchvision import transforms
 from torchvision.transforms.transforms import ToPILImage
@@ -50,5 +51,6 @@ class BuildDataset(Dataset):
                 transforms.ToPILImage(),
                 transforms.Resize((self.img_size, self.img_size)),
                 transforms.ToTensor(),
+                nn.Sigmoid(),
             ])
         return transform(frame)
