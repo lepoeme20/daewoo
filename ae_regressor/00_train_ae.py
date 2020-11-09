@@ -12,15 +12,6 @@ from utils.build_dataloader import get_dataloader
 import utils.functions as F
 from ae_regressor import config
 
-
-# Set random seed for reproducibility
-SEED = 87
-np.random.seed(SEED)
-torch.manual_seed(SEED)
-if torch.cuda.is_available():
-    torch.cuda.manual_seed(SEED)
-
-
 def main(args):
     # Create model
     autoencoder = F.create_model(args)
@@ -133,5 +124,12 @@ def main(args):
 
 
 if __name__ == '__main__':
+    # Set random seed for reproducibility
+    SEED = 87
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(SEED)
+
     h_params = config.get_config()
     main(h_params)
