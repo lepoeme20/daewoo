@@ -2,6 +2,11 @@ import torch
 import argparse
 import multiprocessing
 
+def bound_float(f):
+    f = float(f)
+    assert 0 < f <= 1., '비율은 0과 1사이여야 합니다'
+    return f
+
 def set_parser(parser):
     base_args = parser.add_argument_group('common arguments')
     base_args.add_argument(
@@ -30,6 +35,13 @@ def set_parser(parser):
     )
     ae_args.add_argument(
         "--log-interval", type=int, default=200, help="Set interval for logging"
+    )
+    rg_args = parser.add_argument_group('Regression arguments')
+    rg_args.add_argument(
+        "--use-original", action="store_true", default=False, help="using original image vector to regression"
+    )
+    rg_args.add_argument(
+        "--sampling-ratio", type=bound_float, default=0.1, help="Set sampling ratio"
     )
     return parser
 
