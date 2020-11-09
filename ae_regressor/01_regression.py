@@ -1,34 +1,42 @@
 import os
 import sys
 import torch
-import torch.nn as nn
 # Regressor
 from sklearn.svm import SVR
 from sklearn.metrics import mean_absolute_error, make_scorer
-from sklearn.linear_model import LinearRegression as LR
 from sklearn.model_selection import GridSearchCV
 import pickle
 # import matplotlib.pyplot as plt
 # TODO: 시각화 추가
 import numpy as np
-import argparse
+import pandas as pd
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
 import utils.functions as F
 from ae_regressor import config
 
-
 def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 def main(args):
-    trn_loader, _, tst_loader = get_dataloader(
-        csv_path=args.csv_path,
-        batch_size=args.batch_size,
-        iid=args.iid,
-        transform=args.norm_type,
-        img_size=args.img_size
-    )
+    if args.use_original:
+        df = pd.read_csv(args.csv_path)
+
+        if args.iid:
+            # i.i.d condition
+            trn, _, tst = np.split(df.sample(frac=1), [int(.6*len(df)), int(.8*len(df))])
+        else:
+            # time series condition
+            trn, _, tst = np.split(df, [int(.6*len(df)), int(.8*len(df))])
+
+    else:
+        trn_loader, _, tst_loader = get_dataloader(
+            csv_path=args.csv_path,
+            batch_size=args.batch_size,
+            iid=args.iid,
+            transform=args.norm_type,
+            img_size=args.img_size
+        )
 
     # Set & create save path
     if args.iid:
@@ -85,7 +93,10 @@ def main(args):
 
     else:
         # train data 추출
-        x_train, y_train = F.get_data(trn_loader, args.device, encoder)
+        if args.use_original:
+            x_train, y_train = F.get_original_data(trn, args.sampling_ratio)
+        else:
+            x_train, y_train = F.get_data(trn_loader, args.device, encoder)
 
         # gird search 범위 지정
         bound = [0.001, 0.01, 0.1, 1., 10, 100]
@@ -130,5 +141,12 @@ def main(args):
 
 
 if __name__ == '__main__':
+    # Set random seed for reproducibility
+    SEED = 87
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(SEED)
+
     h_params = config.get_config()
     main(h_params)
