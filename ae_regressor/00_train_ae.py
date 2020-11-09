@@ -4,13 +4,14 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 from torchvision.utils import save_image
-import argparse
 import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
-from ae_regressor.model_ae import AE
+import utils.functions as F
+from ae_regressor import config
+
 
 # Set random seed for reproducibility
 SEED = 87
@@ -19,48 +20,10 @@ torch.manual_seed(SEED)
 if torch.cuda.is_available():
     torch.cuda.manual_seed(SEED)
 
-def create_model(args):
-    autoencoder = AE()
-    if torch.cuda.is_available():
-        autoencoder = nn.DataParallel(autoencoder)
 
-    autoencoder.to(args.device)
-    print(f"Model moved to {args.device}")
-    return autoencoder
-
-def main():
-    parser = argparse.ArgumentParser(description="Train Autoencoder")
-    parser.add_argument(
-        "--csv_path", type=str, default='./preprocessing/brave_data_label.csv',
-        help="csv file path"
-    )
-    parser.add_argument(
-        "--iid", action="store_true", default=False, help="use argument for iid condition"
-    )
-    parser.add_argument(
-        "--test", action="store_true", default=False, help="Perform Test only"
-    )
-    parser.add_argument(
-        "--img-size", type=int, default=32, help='image size for Auto-encoder (default: 32x32)'
-    )
-    parser.add_argument(
-        "--norm-type", type=int, choices=[0, 1, 2],
-        help="0: ToTensor, 1: Ordinary image normalizaeion, 2: Image by Image normalization"
-    )
-    parser.add_argument(
-        "--batch-size", type=int, help="Batch size"
-    )
-    parser.add_argument(
-        "--epochs", type=int, default=50, help="# of training epochs"
-    )
-    parser.add_argument(
-        "--log-interval", type=int, default=200, help="Set interval for logging"
-    )
-    args = parser.parse_args()
-    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+def main(args):
     # Create model
-    autoencoder = create_model(args)
+    autoencoder = F.create_model(args)
     # Load data
     trn_loader, dev_loader, tst_loader = get_dataloader(
         csv_path=args.csv_path,
@@ -170,4 +133,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    h_params = config.get_config()
+    main(h_params)

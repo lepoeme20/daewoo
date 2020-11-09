@@ -56,7 +56,8 @@ class AE(nn.Module):
             nn.LeakyReLU(True),
             nn.Linear(64, 128),
             nn.LeakyReLU(True),
-            nn.Linear(128, 1024)
+            nn.Linear(128, 1024),
+            nn.Sigmoid()
         )
 
     def forward(self, x):

@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 # Regressor
 from sklearn.svm import SVR
-
 from sklearn.metrics import mean_absolute_error, make_scorer
 from sklearn.linear_model import LinearRegression as LR
 from sklearn.model_selection import GridSearchCV
@@ -15,60 +14,14 @@ import numpy as np
 import argparse
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
-from ae_regressor.model_ae import AE
+import utils.functions as F
+from ae_regressor import config
+
 
 def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
-def create_model(args):
-    autoencoder = AE()
-    if torch.cuda.is_available():
-        autoencoder = nn.DataParallel(autoencoder)
-
-    autoencoder.to(args.device)
-    print(f"Model moved to {args.device}")
-    return autoencoder
-
-def get_data(data_loader, device, model):
-    print(f"Latent vectors will be extracted on {device}")
-    x = np.empty([0, 32])
-    y = np.empty([0])
-    for i, (inputs, labels) in enumerate((data_loader)):
-        encoded = model(inputs.view(inputs.size(0), -1).to(device))
-        latent_vector = encoded.cpu().data.numpy()
-        x = np.r_[x, latent_vector]
-        y = np.r_[y, labels.cpu().data.numpy()]
-        if i%20 == 0:
-            print(f'Progress: [{i}/{len(data_loader)}]')
-
-    return x, y
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Train Autoencoder")
-    parser.add_argument(
-        "--csv_path", type=str, default='./preprocessing/brave_data_label.csv',
-        help="csv file path"
-    )
-    parser.add_argument(
-        "--iid", action="store_true", default=False, help="use argument for iid condition"
-    )
-    parser.add_argument(
-        "--test", action="store_true", default=False, help="Perform Test only"
-    )
-    parser.add_argument(
-        "--norm-type", type=int, choices=[0, 1, 2],
-        help="0: ToTensor, 1: Ordinary image normalization, 2: Image by Image normalization"
-    )
-    parser.add_argument(
-        "--batch-size", type=int, help="Batch size"
-    )
-    parser.add_argument(
-        "--img-size", type=int, default=32, help='image size for Auto-encoder (default: 32x32)'
-    )
-    args, _ = parser.parse_known_args()
-    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+def main(args):
     trn_loader, _, tst_loader = get_dataloader(
         csv_path=args.csv_path,
         batch_size=args.batch_size,
@@ -86,7 +39,7 @@ def main():
         model_path = f'./ae_regressor/best_model/norm_{args.norm_type}/time'
 
     # Create model
-    autoencoder = create_model(args)
+    autoencoder = F.create_model(args)
     checkpoint = torch.load(os.path.join(model_path, 'autoencoder.pkl'))
     autoencoder.module.load_state_dict(checkpoint['model'])
     encoder = autoencoder.module.encoder
@@ -124,7 +77,7 @@ def main():
         with open(load_path, 'rb') as f:
             best_model = pickle.load(f)
 
-        x_test, y_test = get_data(tst_loader, args.device, encoder)
+        x_test, y_test = F.get_data(tst_loader, args.device, encoder)
         y_pred = best_model.predict(x_test)
         mae = mean_absolute_error(y_test, y_pred)
         mape = mean_absolute_percentage_error(y_true=y_test, y_pred=y_pred)
@@ -132,7 +85,7 @@ def main():
 
     else:
         # train data 추출
-        x_train, y_train = get_data(trn_loader, args.device, encoder)
+        x_train, y_train = F.get_data(trn_loader, args.device, encoder)
 
         # gird search 범위 지정
         bound = [0.001, 0.01, 0.1, 1., 10, 100]
@@ -177,4 +130,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    h_params = config.get_config()
+    main(h_params)
