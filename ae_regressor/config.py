@@ -43,6 +43,9 @@ def set_parser(parser):
     rg_args.add_argument(
         "--sampling-ratio", type=bound_float, default=0.1, help="Set sampling ratio"
     )
+    rg_args.add_argument(
+        "--num-parallel", type=int, default=32, help="Set the # of process for regression"
+    )
     return parser
 
 def get_config():
