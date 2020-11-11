@@ -61,7 +61,7 @@ def main(args):
             running_loss = 0.0
             _dev_loss = 0.0
             dev_loss = None
-            inputs = None
+            inputs, outputs = None, None
 
             print('\n\n<Training>')
             for i, (inputs, _) in enumerate(trn_loader):
@@ -80,11 +80,6 @@ def main(args):
                     print(f'[Trn] {epoch+1}/{args.epochs}, {i+1}/{len(trn_loader)} \
                         loss: {(running_loss/args.log_interval):.5f}')
                     running_loss = 0.0
-
-            save_image(
-                torchvision.utils.make_grid(inputs),
-                os.path.join(fig_save_path, f'original_epoch_{epoch}.jpg')
-                )
 
             # Validate Model
             print('\n\n<Validation>')
@@ -106,8 +101,12 @@ def main(args):
                         print(f'[Dev] {epoch+1}/{args.epochs}, {idx+1}/{len(dev_loader)} \
                             loss: {dev_loss:.5f}')
             save_image(
-                torchvision.utils.make_grid(inputs),
+                torchvision.utils.make_grid(outputs),
                 os.path.join(fig_save_path, f'reconstructed_epoch_{epoch}.jpg')
+                )
+            save_image(
+                torchvision.utils.make_grid(inputs),
+                os.path.join(fig_save_path, f'original_epoch.jpg')
                 )
 
             if dev_loss < best_loss:
