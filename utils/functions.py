@@ -47,13 +47,16 @@ def get_original_data(data, sampling_ratio):
 
     return x, y
 
-def get_data(data_loader, device, model):
-    print(f"Latent vectors will be extracted on {device}")
-    x = np.empty([0, 32])
+def get_data(args, data_loader, model):
+    print(f"Latent vectors will be extracted on {args.device}")
+    x = np.empty([0, 64])
     y = np.empty([0])
     for i, (inputs, labels) in enumerate((data_loader)):
-        encoded = model(inputs.view(inputs.size(0), -1).to(device))
-        latent_vector = encoded.cpu().data.numpy()
+        encoded = model(build_input(args, inputs))
+        if args.cae:
+            latent_vector = torch.squeeze(_gap(encoded)).cpu().data.numpy()
+        else:
+            latent_vector = encoded.cpu().data.numpy()
         x = np.r_[x, latent_vector]
         y = np.r_[y, labels.cpu().data.numpy()]
         if i%20 == 0:
@@ -62,3 +65,6 @@ def get_data(data_loader, device, model):
 
 def build_input(args, inputs):
     return inputs.to(args.device) if args.cae else inputs.view(inputs.size(0), -1).to(args.device)
+
+def _gap(inputs):
+    return nn.AdaptiveAvgPool2d((1, 1))(inputs)
