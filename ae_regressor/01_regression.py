@@ -86,7 +86,7 @@ def main(args):
         with open(load_path, 'rb') as f:
             best_model = pickle.load(f)
 
-        x_test, y_test = F.get_data(tst_loader, args.device, encoder)
+        x_test, y_test = F.get_data(args, tst_loader, encoder)
         y_pred = best_model.predict(x_test)
         mae = mean_absolute_error(y_test, y_pred)
         mape = mean_absolute_percentage_error(y_true=y_test, y_pred=y_pred)
@@ -97,8 +97,8 @@ def main(args):
         if args.use_original:
             x_train, y_train = F.get_original_data(trn, args.sampling_ratio)
         else:
-            x_train, y_train = F.get_data(trn_loader, args.device, encoder)
-
+            x_train, y_train = F.get_data(args, trn_loader, encoder)
+        print(len(np.unique(x_train)))
         # gird search 범위 지정
         bound = [0.001, 0.01, 0.1, 1., 10, 100]
         param_grid = {
