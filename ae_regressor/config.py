@@ -62,5 +62,6 @@ def get_config():
     parser = argparse.ArgumentParser(description="AE + SVR")
     args, _ = set_parser(parser).parse_known_args()
     args.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    args.data_type = 'iid' if args.iid else 'time'
 
     return args
