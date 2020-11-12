@@ -19,6 +19,44 @@ from ae_regressor import config
 def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
+def get_results(x, y, top_k, df_results, grid, model_path):
+    top_k_parmas = df_results.iloc[top_k, 7]
+    print(top_k_parmas)
+    top_k_model = grid.best_estimator_.set_params(**top_k_parmas)
+
+    # fit
+    top_k_model.fit(x, y)
+    y_pred = top_k_model.predict(x)
+    mae = mean_absolute_error(y, y_pred)
+    mape = mean_absolute_percentage_error(y_true=y, y_pred=y_pred)
+    print(f"[Trainig] MAE:{mae}, MAPE:{mape}")
+
+    performance = {'mae': mae, 'mape': mape}
+    with open(os.path.join(model_path, f'top_{top_k}_trn_performance.pkl'), 'wb') as f:
+        pickle.dump(performance, f)
+
+    save_path = os.path.join(model_path, f'top_{top_k}_regression.pkl')
+    with open(save_path, 'wb') as f:
+        pickle.dump(top_k_model, f)
+
+def set_grid(kernel):
+    # gird search 범위 지정
+    bound = [0.001, 0.01, 0.1, 1., 10., 100.]
+    degrees = [1, 2, 3, 4, 5, 6]
+    if kernel == 'poly':
+        param_grid = {
+            'kernel': ['poly'],
+            'C': bound, # Regularization parameter
+            'degree': degrees
+            }
+    else:
+        param_grid = {
+            'kernel': ['rbf'],
+            'C': bound, # Regularization parameter
+            'gamma': bound,
+            }
+    return param_grid
+
 def main(args):
     if args.use_original:
         df = pd.read_csv(args.csv_path)
@@ -40,18 +78,15 @@ def main(args):
         )
 
     # Set & create save path
-    if args.iid:
-        print("** Training progress with iid condition **")
-        model_path = f'./ae_regressor/best_model/norm_{args.norm_type}/iid'
-    else:
-        print("** Training progress with time series condition **")
-        model_path = f'./ae_regressor/best_model/norm_{args.norm_type}/time'
+    print(f"** Training progress with {args.data_type} condition **")
+    model_path = f'./ae_regressor/best_model/norm_{args.norm_type}/{args.data_type}'
 
-    # Create model
-    autoencoder = F.create_model(args)
-    checkpoint = torch.load(os.path.join(model_path, 'autoencoder.pkl'))
-    autoencoder.module.load_state_dict(checkpoint['model'])
-    encoder = autoencoder.module.encoder
+    if not args.use_original:
+        # Create model
+        autoencoder = F.create_model(args)
+        checkpoint = torch.load(os.path.join(model_path, 'autoencoder.pkl'))
+        autoencoder.module.load_state_dict(checkpoint['model'])
+        encoder = autoencoder.module.encoder
 
     if args.test:
         # #reg_type = 'svr'
@@ -95,52 +130,46 @@ def main(args):
     else:
         # train data 추출
         if args.use_original:
-            x_train, y_train = F.get_original_data(trn, args.sampling_ratio)
+            x_train, y_train = F.get_original_data(args, trn, args.sampling_ratio)
         else:
-            x_train, y_train = F.get_data(args, trn_loader, encoder)
-        print(len(np.unique(x_train)))
+            x_train, y_train = F.get_data(args, trn_loader, encoder, args.sampling_ratio)
+        results = pd.DataFrame()
+
         # gird search 범위 지정
-        bound = [0.001, 0.01, 0.1, 1., 10, 100]
-        param_grid = {
-            'kernel': ['linear', 'poly', 'rbf'],
-            'C': bound, # Regularization parameter
-            'gamma': bound
-            }
-        # grid_search 지정
-        grid_search = GridSearchCV(
-            estimator=SVR(),
-            param_grid=param_grid,
-            cv=5,
-            n_jobs=args.num_parallel,
-            scoring=make_scorer(mean_absolute_error),
-            return_train_score=True,
-            verbose=10)
-        # model fitting
-        with parallel_backend('multiprocessing'):
-            grid_search.fit(x_train, y_train)
+        for kernel in ['poly', 'rbf']:
+            param_grid = set_grid(kernel)
+            # grid_search 지정
+            grid_search = GridSearchCV(
+                estimator=SVR(),
+                param_grid=param_grid,
+                cv=5,
+                n_jobs=args.num_parallel,
+                scoring=make_scorer(mean_absolute_error),
+                return_train_score=True,
+                )
+            # model fitting
+            with parallel_backend('multiprocessing'):
+                grid_search.fit(x_train, y_train)
 
-        # printing
-        print(grid_search.best_params_)
-        print(grid_search.best_estimator_)
+            results_tmp = pd.DataFrame(grid_search.cv_results_)
+            results = results.append(results_tmp, sort=False)
 
-        # set best model
-        best_model = grid_search.best_estimator_
+        # save grid search results
+        results.sort_values(by='mean_test_score', inplace=True)
 
-        # fit
-        best_model.fit(x_train, y_train)
-        y_pred = best_model.predict(x_train)
-        mae = mean_absolute_error(y_train, y_pred)
-        mape = mean_absolute_percentage_error(y_true=y_train, y_pred=y_pred)
-        print(f"[Trainig] MAE:{mae}, MAPE:{mape}")
-
-        performance = {'mae': mae, 'mape': mape}
-        with open(os.path.join(model_path, 'dev_performance.pkl'), 'wb') as f:
-            pickle.dump(performance, f)
-
-        save_path = os.path.join(model_path, 'regression.pkl')
-        with open(save_path, 'wb') as f:
-            pickle.dump(best_model, f)
-
+        if args.use_original:
+            x_train, y_train = F.get_original_data(args, trn, 1)
+        else:
+            x_train, y_train = F.get_data(args, trn_loader, encoder, 1)
+        for i in range(1, 4):
+            get_results(
+                x=x_train,
+                y=y_train,
+                top_k=i,
+                df_results=results,
+                grid=grid_search,
+                model_path=model_path
+            )
 
 if __name__ == '__main__':
     # Set random seed for reproducibility
