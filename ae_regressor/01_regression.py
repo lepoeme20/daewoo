@@ -62,11 +62,10 @@ def main(args):
         df = pd.read_csv(args.csv_path)
 
         if args.iid:
-            # i.i.d condition
             trn, _, tst = np.split(df.sample(frac=1), [int(.6*len(df)), int(.8*len(df))])
         else:
-            # time series condition
             trn, _, tst = np.split(df, [int(.6*len(df)), int(.8*len(df))])
+        model_path = f'./ae_regressor/best_model/{args.ae_type}/norm_{args.norm_type}/{args.data_type}'
 
     else:
         trn_loader, _, tst_loader = get_dataloader(
@@ -77,16 +76,14 @@ def main(args):
             img_size=args.img_size
         )
 
-    # Set & create save path
-    print(f"** Training progress with {args.data_type} condition **")
-
-    if not args.use_original:
         # Create model
         model_path = f'./ae_regressor/best_model/{args.ae_type}/norm_{args.norm_type}/{args.data_type}'
         autoencoder = F.create_model(args)
         checkpoint = torch.load(os.path.join(model_path, 'autoencoder.pkl'))
         autoencoder.module.load_state_dict(checkpoint['model'])
         encoder = autoencoder.module.encoder
+
+    print(f"** Training progress with {args.data_type} condition **")
 
     if args.test:
         # #reg_type = 'svr'
@@ -133,6 +130,7 @@ def main(args):
             x_train, y_train = F.get_original_data(args, trn, args.sampling_ratio)
         else:
             x_train, y_train = F.get_data(args, trn_loader, encoder, args.sampling_ratio)
+        print(f'Data volumn for grid search: {len(y_train)}')
         results = pd.DataFrame()
 
         # gird search 범위 지정
@@ -142,7 +140,7 @@ def main(args):
             grid_search = GridSearchCV(
                 estimator=SVR(),
                 param_grid=param_grid,
-                cv=5,
+                cv=3,
                 n_jobs=args.num_parallel,
                 scoring=make_scorer(mean_absolute_error),
                 return_train_score=True,
