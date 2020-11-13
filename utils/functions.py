@@ -73,6 +73,7 @@ def get_data(args, data_loader, model, sampling_ratio):
     else:
         x = np.empty([0, 64])
         y = np.empty([0])
+
         for i, (inputs, labels) in enumerate((data_loader)):
             encoded = model(build_input(args, inputs))
             if args.cae:
@@ -83,6 +84,11 @@ def get_data(args, data_loader, model, sampling_ratio):
             y = np.r_[y, labels.cpu().data.numpy()]
             if i%20 == 0:
                 print(f'Progress: [{i}/{len(data_loader)}]')
+
+        if sampling_ratio != 1.:
+            idx = np.random.choice(np.arange(len(y)), int(len(y)*sampling_ratio), replace=False)
+            x = x[idx]
+            y = y[idx]
 
         data = {'x': x, 'y': y}
         with open(data_path, 'wb') as f:
