@@ -32,10 +32,10 @@ def get_results(x, y, top_k, df_results, grid, model_path):
     print(f"[Trainig] MAE:{mae}, MAPE:{mape}")
 
     performance = {'mae': mae, 'mape': mape}
-    with open(os.path.join(model_path, f'top_{top_k}_trn_performance.pkl'), 'wb') as f:
+    with open(os.path.join(model_path, f'{args.sampling_ratio}_seed_{args.seed}_top_{top_k}_trn_performance.pkl'), 'wb') as f:
         pickle.dump(performance, f)
 
-    save_path = os.path.join(model_path, f'top_{top_k}_regression.pkl')
+    save_path = os.path.join(model_path, f'{args.sampling_ratio}_seed_{args.seed}_top_{top_k}_regression.pkl')
     with open(save_path, 'wb') as f:
         pickle.dump(top_k_model, f)
 
@@ -57,7 +57,7 @@ def set_grid(kernel):
             }
     return param_grid
 
-def main(args):
+def main():
     if args.use_original:
         df = pd.read_csv(args.csv_path)
 
@@ -172,13 +172,13 @@ def main(args):
             )
 
 if __name__ == '__main__':
+    global args
     # Set random seed for reproducibility
-    h_params = config.get_config()
-    SEED = h_params.seed
+    args = config.get_config()
+    SEED = args.seed
     np.random.seed(SEED)
     torch.manual_seed(SEED)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(SEED)
 
-    h_params = config.get_config()
-    main(h_params)
+    main()
