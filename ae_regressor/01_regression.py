@@ -79,10 +79,10 @@ def main(args):
 
     # Set & create save path
     print(f"** Training progress with {args.data_type} condition **")
-    model_path = f'./ae_regressor/best_model/norm_{args.norm_type}/{args.data_type}'
 
     if not args.use_original:
         # Create model
+        model_path = f'./ae_regressor/best_model/{args.ae_type}/norm_{args.norm_type}/{args.data_type}'
         autoencoder = F.create_model(args)
         checkpoint = torch.load(os.path.join(model_path, 'autoencoder.pkl'))
         autoencoder.module.load_state_dict(checkpoint['model'])
