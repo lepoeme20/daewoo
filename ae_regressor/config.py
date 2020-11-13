@@ -40,7 +40,7 @@ def set_parser(parser):
         "--log-interval", type=int, default=200, help="Set interval for logging"
     )
     ae_args.add_argument(
-        "--cae", action="store_true", default=False, help="CAE or not (linear AE)"
+        "--cae", action="store_false", default=True, help="CAE or not (linear AE)"
     )
     rg_args = parser.add_argument_group('Regression arguments')
     rg_args.add_argument(
@@ -63,5 +63,6 @@ def get_config():
     args, _ = set_parser(parser).parse_known_args()
     args.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     args.data_type = 'iid' if args.iid else 'time'
+    args.ae_type = 'cae' if args.cae else 'ae'
 
     return args
