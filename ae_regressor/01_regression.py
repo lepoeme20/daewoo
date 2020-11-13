@@ -154,6 +154,7 @@ def main(args):
 
         # save grid search results
         results.sort_values(by='mean_test_score', inplace=True)
+        results.to_csv(os.path.join(model_path, 'gird_search.csv'))
 
         if args.use_original:
             x_train, y_train = F.get_original_data(args, trn, 1)
