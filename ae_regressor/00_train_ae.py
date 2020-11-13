@@ -28,11 +28,11 @@ def main(args):
     if args.iid:
         print("** Training progress with iid condition **")
         fig_save_path = f'./ae_regressor/save_fig/norm_{args.norm_type}/iid'
-        model_save_path = f'./ae_regressor/best_model/norm_{args.norm_type}/iid'
+        model_save_path = f'./ae_regressor/best_model/{args.ae_type}/norm_{args.norm_type}/iid'
     else:
         print("** Training progress with time series condition **")
         fig_save_path = f'./ae_regressor/save_fig/norm_{args.norm_type}/time'
-        model_save_path = f'./ae_regressor/best_model/norm_{args.norm_type}/time'
+        model_save_path = f'./ae_regressor/best_model/{args.ae_type}/norm_{args.norm_type}/time'
     os.makedirs(fig_save_path, exist_ok=True)
     os.makedirs(model_save_path, exist_ok=True)
 
