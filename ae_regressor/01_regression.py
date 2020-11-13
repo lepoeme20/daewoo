@@ -21,7 +21,7 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 def get_results(x, y, top_k, df_results, grid, model_path):
     top_k_parmas = df_results.iloc[top_k, 7]
-    print(top_k_parmas)
+    print(f"Top-{top_k}th model params: {top_k_parmas}")
     top_k_model = grid.best_estimator_.set_params(**top_k_parmas)
 
     # fit
@@ -155,7 +155,7 @@ def main(args):
 
         # save grid search results
         results.sort_values(by='mean_test_score', inplace=True)
-        results.to_csv(os.path.join(model_path, 'gird_search.csv'))
+        results.to_csv(os.path.join(model_path, f'sampling_{args.sampling_ratio}_seed_{args.seed}_gird_search.csv'))
 
         if args.use_original:
             x_train, y_train = F.get_original_data(args, trn, 1)
