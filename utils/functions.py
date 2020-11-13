@@ -27,7 +27,7 @@ def create_model(args):
 def get_original_data(args, data, sampling_ratio):
     root_path = f'./ae_regressor/data/img_flatten/original/norm_{args.norm_type}/{args.data_type}'
     os.makedirs(root_path, exist_ok=True)
-    data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}')
+    data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
     if os.path.isfile(data_path):
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
@@ -64,7 +64,7 @@ def get_data(args, data_loader, model, sampling_ratio):
     print(f"Latent vectors will be extracted on {args.device}")
     root_path = f'./ae_regressor/data/{args.ae_type}/norm_{args.norm_type}/{args.data_type}'
     os.makedirs(root_path, exist_ok=True)
-    data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}')
+    data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
 
     if os.path.isfile(data_path):
         with open(data_path, 'rb') as f:
