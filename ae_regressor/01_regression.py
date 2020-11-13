@@ -21,7 +21,7 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 def get_results(x, y, top_k, df_results, grid, model_path):
     top_k_parmas = df_results.iloc[top_k, 7]
-    print(top_k_parmas)
+    print(f"Top-{top_k}th model params: {top_k_parmas}")
     top_k_model = grid.best_estimator_.set_params(**top_k_parmas)
 
     # fit
@@ -32,10 +32,10 @@ def get_results(x, y, top_k, df_results, grid, model_path):
     print(f"[Trainig] MAE:{mae}, MAPE:{mape}")
 
     performance = {'mae': mae, 'mape': mape}
-    with open(os.path.join(model_path, f'top_{top_k}_trn_performance.pkl'), 'wb') as f:
+    with open(os.path.join(model_path, f'{args.sampling_ratio}_seed_{args.seed}_top_{top_k}_trn_performance.pkl'), 'wb') as f:
         pickle.dump(performance, f)
 
-    save_path = os.path.join(model_path, f'top_{top_k}_regression.pkl')
+    save_path = os.path.join(model_path, f'{args.sampling_ratio}_seed_{args.seed}_top_{top_k}_regression.pkl')
     with open(save_path, 'wb') as f:
         pickle.dump(top_k_model, f)
 
@@ -57,7 +57,7 @@ def set_grid(kernel):
             }
     return param_grid
 
-def main(args):
+def main():
     if args.use_original:
         df = pd.read_csv(args.csv_path)
 
@@ -155,7 +155,7 @@ def main(args):
 
         # save grid search results
         results.sort_values(by='mean_test_score', inplace=True)
-        results.to_csv(os.path.join(model_path, 'gird_search.csv'))
+        results.to_csv(os.path.join(model_path, f'sampling_{args.sampling_ratio}_seed_{args.seed}_gird_search.csv'))
 
         if args.use_original:
             x_train, y_train = F.get_original_data(args, trn, 1)
@@ -172,13 +172,13 @@ def main(args):
             )
 
 if __name__ == '__main__':
+    global args
     # Set random seed for reproducibility
-    h_params = config.get_config()
-    SEED = h_params.seed
+    args = config.get_config()
+    SEED = args.seed
     np.random.seed(SEED)
     torch.manual_seed(SEED)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(SEED)
 
-    h_params = config.get_config()
-    main(h_params)
+    main()
