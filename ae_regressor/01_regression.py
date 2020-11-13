@@ -65,7 +65,7 @@ def main(args):
             trn, _, tst = np.split(df.sample(frac=1), [int(.6*len(df)), int(.8*len(df))])
         else:
             trn, _, tst = np.split(df, [int(.6*len(df)), int(.8*len(df))])
-        model_path = f'./ae_regressor/best_model/{args.ae_type}/norm_{args.norm_type}/{args.data_type}'
+        model_path = f'./ae_regressor/best_model/img_flatten/original/norm_{args.norm_type}/{args.data_type}'
 
     else:
         trn_loader, _, tst_loader = get_dataloader(
@@ -83,6 +83,7 @@ def main(args):
         autoencoder.module.load_state_dict(checkpoint['model'])
         encoder = autoencoder.module.encoder
 
+    os.makedirs(model_path, exist_ok=True)
     print(f"** Training progress with {args.data_type} condition **")
 
     if args.test:
