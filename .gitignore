@@ -218,4 +218,5 @@ check_label.py
 best_model
 save_fig
 .idea
+trn_data
 data
