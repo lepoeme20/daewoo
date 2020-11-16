@@ -28,7 +28,7 @@ def get_original_data(args, data, sampling_ratio):
     root_path = f'./ae_regressor/data/img_flatten/original/norm_{args.norm_type}/{args.data_type}'
     os.makedirs(root_path, exist_ok=True)
     data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
-    if os.path.isfile(data_path):
+    if os.path.isfile(data_path) and not args.test:
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
         x, y = data['x'], data['y']
@@ -54,9 +54,11 @@ def get_original_data(args, data, sampling_ratio):
             if i%1000 == 0:
                 print(f'Progress: [{i}/{len(img_path)}]')
 
-        data = {'x': x, 'y': y}
-        with open(data_path, 'wb') as f:
-            pickle.dump(data, f)
+        if not args.test:
+            print("save data")
+            data = {'x': x, 'y': y}
+            with open(data_path, 'wb') as f:
+                pickle.dump(data, f)
 
     return x, y
 
@@ -66,11 +68,13 @@ def get_data(args, data_loader, model, sampling_ratio):
     os.makedirs(root_path, exist_ok=True)
     data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
 
-    if os.path.isfile(data_path):
+    if os.path.isfile(data_path) and not args.test:
+        print("Load data")
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
         x, y = data['x'], data['y']
     else:
+        print("build data")
         x = np.empty([0, 64])
         y = np.empty([0])
 
@@ -90,9 +94,11 @@ def get_data(args, data_loader, model, sampling_ratio):
             x = x[idx]
             y = y[idx]
 
-        data = {'x': x, 'y': y}
-        with open(data_path, 'wb') as f:
-            pickle.dump(data, f)
+        if not args.test:
+            print("save data")
+            data = {'x': x, 'y': y}
+            with open(data_path, 'wb') as f:
+                pickle.dump(data, f)
 
     return x, y
 
