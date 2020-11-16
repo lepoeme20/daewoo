@@ -119,6 +119,7 @@ def main():
             best_model = pickle.load(f)
 
         x_test, y_test = F.get_data(args, tst_loader, encoder, 1)
+        print("Start prediction")
         y_pred = best_model.predict(x_test)
         mae = mean_absolute_error(y_test, y_pred)
         mape = mean_absolute_percentage_error(y_true=y_test, y_pred=y_pred)
