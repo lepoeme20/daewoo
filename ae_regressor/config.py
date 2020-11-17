@@ -29,6 +29,10 @@ def set_parser(parser):
     base_args.add_argument(
         "--seed", type=int, default=22, help="seed number"
     )
+    base_args.add_argument(
+        "--data-type", type=int, choices=[0, 1, 2], 
+        help="0: Height, 1: Direction, 2: Period"
+    )
     ae_args = parser.add_argument_group('Auto Encoder arguments')
     ae_args.add_argument(
         "--img-size", type=int, default=32, help='image size for Auto-encoder (default: 32x32)'
