@@ -2,14 +2,21 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torchvision import transforms
-from torchvision.transforms.transforms import ToPILImage
 import cv2
 import numpy as np
 
 class BuildDataset(Dataset):
-    def __init__(self, df, transform, img_size):
+    def __init__(self, df, transform, img_size, dtype):
         self.img_path = df['image'].values
-        self.labels = df['label'].values
+        if dtype == 0:
+            print(" Set label as height")
+            self.labels = df['height'].values
+        elif dtype == 1:
+            print(" Set label as direction")
+            self.labels = df['direction'].values
+        else:
+            print(" Set label as period")
+            self.labels = df['period'].values
         self.transform = transform
         self.img_size = img_size
 
