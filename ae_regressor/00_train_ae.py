@@ -1,4 +1,3 @@
-  
 import numpy as np
 import torch
 import torch.nn as nn
@@ -66,6 +65,7 @@ def main(args):
             inputs, outputs = None, None
 
             print('\n\n<Training>')
+            autoencoder.train()
             for i, (inputs, _) in enumerate(trn_loader):
                 inputs = F.build_input(args, inputs)
                 # ============ Forward ============
@@ -86,7 +86,6 @@ def main(args):
             # Validate Model
             print('\n\n<Validation>')
             autoencoder.eval()
-
             for idx, (inputs, _) in enumerate(dev_loader):
                 # step progress
                 inputs = F.build_input(args, inputs)
