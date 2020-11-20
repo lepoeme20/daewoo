@@ -25,7 +25,7 @@ def create_model(args):
 
 
 def get_original_data(args, data, sampling_ratio):
-    root_path = f'./ae_regressor/trn_data/img_flatten/original/norm_{args.norm_type}/{args.data_type}'
+    root_path = f'./ae_regressor/trn_data/img_flatten/{args.label_type}/original/norm_{args.norm_type}/{args.data_type}'
     os.makedirs(root_path, exist_ok=True)
     data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
 
@@ -35,7 +35,15 @@ def get_original_data(args, data, sampling_ratio):
         x, y = data['x'], data['y']
     else:
         img_path = data['image'].values
-        y = data['label'].values
+        if args.data_type == 0:
+            print(" Set label as height")
+            y = data['height'].values
+        elif args.data_type == 1:
+            print(" Set label as direction")
+            y= data['direction'].values
+        else:
+            print(" Set label as period")
+            y = data['period'].values
         x = np.empty([0, 32*32])
 
         if sampling_ratio != 1.:
@@ -65,7 +73,7 @@ def get_original_data(args, data, sampling_ratio):
 
 def get_data(args, data_loader, model, sampling_ratio):
     print(f"Latent vectors will be extracted on {args.device}")
-    root_path = f'./ae_regressor/trn_data/{args.ae_type}/norm_{args.norm_type}/{args.data_type}'
+    root_path = f'./ae_regressor/trn_data/{args.label_type}/{args.ae_type}/norm_{args.norm_type}/{args.data_type}'
     os.makedirs(root_path, exist_ok=True)
     data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
 

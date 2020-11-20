@@ -30,7 +30,7 @@ def set_parser(parser):
         "--seed", type=int, default=22, help="seed number"
     )
     base_args.add_argument(
-        "--data-type", type=int, choices=[0, 1, 2], 
+        "--label-type", type=int, choices=[0, 1, 2], 
         help="0: Height, 1: Direction, 2: Period"
     )
     ae_args = parser.add_argument_group('Auto Encoder arguments')
@@ -68,5 +68,4 @@ def get_config():
     args.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     args.data_type = 'iid' if args.iid else 'time'
     args.ae_type = 'cae' if args.cae else 'ae'
-
     return args
