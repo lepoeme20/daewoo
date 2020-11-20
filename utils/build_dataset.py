@@ -8,14 +8,11 @@ import numpy as np
 class BuildDataset(Dataset):
     def __init__(self, df, transform, img_size, dtype):
         self.img_path = df['image'].values
-        if dtype == 0:
-            print(" Set label as height")
+        if dtype == 'height':
             self.labels = df['height'].values
-        elif dtype == 1:
-            print(" Set label as direction")
+        elif dtype == 'direnction':
             self.labels = df['direction'].values
         else:
-            print(" Set label as period")
             self.labels = df['period'].values
         self.transform = transform
         self.img_size = img_size
