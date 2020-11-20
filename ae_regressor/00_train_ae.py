@@ -1,3 +1,4 @@
+  
 import numpy as np
 import torch
 import torch.nn as nn
@@ -61,7 +62,8 @@ def main(args):
         for epoch in range(args.epochs):
             running_loss = 0.0
             _dev_loss = 0.0
-            dev_loss = float('inf')
+            dev_loss = None
+            inputs, outputs = None, None
 
             print('\n\n<Training>')
             for i, (inputs, _) in enumerate(trn_loader):
