@@ -61,8 +61,7 @@ def main(args):
         for epoch in range(args.epochs):
             running_loss = 0.0
             _dev_loss = 0.0
-            dev_loss = None
-            inputs, outputs = None, None
+            dev_loss = float('inf')
 
             print('\n\n<Training>')
             for i, (inputs, _) in enumerate(trn_loader):
