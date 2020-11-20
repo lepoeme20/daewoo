@@ -68,4 +68,15 @@ def get_config():
     args.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     args.data_type = 'iid' if args.iid else 'time'
     args.ae_type = 'cae' if args.cae else 'ae'
+
+    assert args.label_type in [0, 1, 2], 'You have to set task using --lable-type'
+    if args.label_type == 0:
+        print(" Set label as height")
+        args.label_type == 'height'
+    elif args.label_type == 1:
+        print(" Set label as direction")
+        args.label_type == 'direction'
+    elif args.label_type == 2:
+        print(" Set label as period")
+        args.label_type == 'period'
     return args
