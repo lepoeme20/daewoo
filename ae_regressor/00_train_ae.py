@@ -101,14 +101,6 @@ def main(args):
                     if idx % args.log_interval == args.log_interval-1:
                         print(f'[Dev] {epoch+1}/{args.epochs}, {idx+1}/{len(dev_loader)} \
                             loss: {dev_loss:.5f}')
-            save_image(
-                torchvision.utils.make_grid(outputs),
-                os.path.join(fig_save_path, f'reconstructed_epoch_{epoch}.jpg')
-                )
-            save_image(
-                torchvision.utils.make_grid(inputs),
-                os.path.join(fig_save_path, f'original_epoch.jpg')
-                )
 
             if dev_loss < best_loss:
                 best_loss = dev_loss
@@ -118,6 +110,15 @@ def main(args):
                     'optimizer': optimizer.state_dict(),
                     'trained_epoch': epoch,
                 }, os.path.join(model_save_path, 'autoencoder.pkl'))
+
+                save_image(
+                    torchvision.utils.make_grid(outputs),
+                    os.path.join(fig_save_path, f'reconstructed_epoch_{epoch}.jpg')
+                    )
+                save_image(
+                    torchvision.utils.make_grid(inputs),
+                    os.path.join(fig_save_path, f'original_epoch.jpg')
+                    )
 
         print('Finished Training')
 
