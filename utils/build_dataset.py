@@ -10,7 +10,7 @@ class BuildDataset(Dataset):
         self.img_path = df['image'].values
         if dtype == 'height':
             self.labels = df['height'].values
-        elif dtype == 'direnction':
+        elif dtype == 'direction':
             self.labels = df['direction'].values
         else:
             self.labels = df['period'].values
