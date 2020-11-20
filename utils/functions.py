@@ -35,7 +35,15 @@ def get_original_data(args, data, sampling_ratio):
         x, y = data['x'], data['y']
     else:
         img_path = data['image'].values
-        y = data['label'].values
+        if args.data_type == 0:
+            print(" Set label as height")
+            y = data['height'].values
+        elif args.data_type == 1:
+            print(" Set label as direction")
+            y= data['direction'].values
+        else:
+            print(" Set label as period")
+            y = data['period'].values
         x = np.empty([0, 32*32])
 
         if sampling_ratio != 1.:
