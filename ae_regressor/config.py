@@ -72,11 +72,11 @@ def get_config():
     assert args.label_type in [0, 1, 2], 'You have to set task using --label-type'
     if args.label_type == 0:
         print(" Set label as height")
-        args.label_type == 'height'
+        args.label_type = 'height'
     elif args.label_type == 1:
         print(" Set label as direction")
-        args.label_type == 'direction'
+        args.label_type = 'direction'
     elif args.label_type == 2:
         print(" Set label as period")
-        args.label_type == 'period'
+        args.label_type = 'period'
     return args
