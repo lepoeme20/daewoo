@@ -2,6 +2,11 @@ import torch
 import argparse
 import multiprocessing
 
+def check_params(params):
+    assert isinstance(params.batch_size, int), 'Mini-batch 사이즈를 지정해 주세요(int type)'
+    assert params.label_type in [0, 1, 2], 'Task (label)을 [0, 1, 2] 중에서 지정해 주세요(--label-type 숫자)'
+    assert params.norm_type in [0, 1, 2], 'Norm 방식을 [0, 1, 2] 중에서 지정해 주세요(--norm-type 숫자)'
+
 def bound_float(f):
     f = float(f)
     assert 0 < f <= 1., '비율은 0과 1사이여야 합니다'
@@ -54,7 +59,7 @@ def set_parser(parser):
         "--sampling-ratio", type=bound_float, default=0.1, help="Set sampling ratio"
     )
     rg_args.add_argument(
-        "--num-parallel", type=int, default=32, help="Set the # of process for regression"
+        "--num-parallel", type=int, default=4, help="Set the # of process for regression"
     )
     return parser
 
@@ -69,7 +74,7 @@ def get_config():
     args.data_type = 'iid' if args.iid else 'time'
     args.ae_type = 'cae' if args.cae else 'ae'
 
-    assert args.label_type in [0, 1, 2], 'You have to set task using --label-type'
+    check_params(args)
     if args.label_type == 0:
         print(" Set label as height")
         args.label_type = 'height'
