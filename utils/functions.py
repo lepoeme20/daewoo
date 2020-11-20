@@ -35,9 +35,9 @@ def get_original_data(args, data, sampling_ratio):
         x, y = data['x'], data['y']
     else:
         img_path = data['image'].values
-        if args.data_type == 'height':
+        if args.label_type == 'height':
             y = data['height'].values
-        elif args.data_type == 'direction':
+        elif args.label_type == 'direction':
             y= data['direction'].values
         else:
             y = data['period'].values
