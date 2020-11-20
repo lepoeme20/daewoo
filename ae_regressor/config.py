@@ -69,7 +69,7 @@ def get_config():
     args.data_type = 'iid' if args.iid else 'time'
     args.ae_type = 'cae' if args.cae else 'ae'
 
-    assert args.label_type in [0, 1, 2], 'You have to set task using --lable-type'
+    assert args.label_type in [0, 1, 2], 'You have to set task using --label-type'
     if args.label_type == 0:
         print(" Set label as height")
         args.label_type == 'height'
