@@ -6,16 +6,17 @@ import cv2
 import numpy as np
 
 class BuildDataset(Dataset):
-    def __init__(self, df, transform, img_size, dtype):
+    def __init__(self, df, transform, img_size, label_type):
         self.img_path = df['image'].values
-        if dtype == 'height':
+        if label_type == 'height':
             self.labels = df['height'].values
-        elif dtype == 'direction':
+        elif label_type == 'direction':
             self.labels = df['direction'].values
         else:
             self.labels = df['period'].values
         self.transform = transform
         self.img_size = img_size
+        self.label_type = label_type
 
     def __len__(self):
         return len(self.labels)
@@ -24,8 +25,10 @@ class BuildDataset(Dataset):
         frame = cv2.imread(self.img_path[idx])
         if len(frame.shape) == 3:
             frame = frame[:, :, 0]
-        label = torch.tensor(self.labels[idx], dtype=torch.float)
-
+        if self.label_type == 'direction':
+            label = torch.tensor(self.labels[idx] // 3, dtype=torch.long)
+        else:
+            label = torch.tensor(self.labels[idx], dtype=torch.float)
         return self.get_transform(frame), label
 
     def get_transform(self, frame):
