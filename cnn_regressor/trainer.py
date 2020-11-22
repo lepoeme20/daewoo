@@ -22,6 +22,7 @@ class Trainer:
         ## model param
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.bias = config["fc_bias"]
+        self.label_type = config["label_type"]
         self.iid = config["iid"]
         self.transform = config["transform"]
         self.path = config["csv_path"]
@@ -62,6 +63,7 @@ class Trainer:
         return get_dataloader(
             self.path,
             batch_size=self.batch_size,
+            label_type=self.label_type,
             iid=self.iid,
             transform=self.transform,
         )
@@ -82,14 +84,19 @@ class Trainer:
         start_time = time.time()
 
         self.model.train()
-        for step, batch in tqdm(
+        for step, (img, label) in tqdm(
             enumerate(self.train_loader), desc="steps", total=len(self.train_loader)
         ):
-            img, label = map(lambda x: x.to(self.device), batch)
+            img = img.to(self.device)
+            if self.label_type != "direction":
+                label = label.to(self.device)
             output = self.model(img)
 
             self.optimizer.zero_grad()
-            loss = self.criterion(output.squeeze(), label)
+            if self.label_type == 'direction':
+                loss = self.criterion(output, label, window_size=2)
+            else:
+                loss = self.criterion(output.squeeze(), label)
             loss.backward()
             self.optimizer.step()
 
@@ -142,7 +149,10 @@ class Trainer:
                 img, label = map(lambda x: x.to(self.device), batch)
 
                 output = self.model(img)
-                loss = self.criterion(output.squeeze(), label)
+                if self.label_type == 'direction':
+                    loss = self.criterion(output, label, window_size=2)
+                else:
+                    loss = self.criterion(output.squeeze(), label)
 
                 val_loss += loss.item()
 
