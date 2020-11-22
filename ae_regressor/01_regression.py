@@ -71,7 +71,7 @@ def main():
         trn_loader, _, tst_loader = get_dataloader(
             csv_path=args.csv_path,
             batch_size=args.batch_size,
-            dtype=args.data_type,
+            dtype=args.label_type,
             iid=args.iid,
             transform=args.norm_type,
             img_size=args.img_size
