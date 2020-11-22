@@ -143,10 +143,12 @@ class Trainer:
 
         self.model.eval()
         with torch.no_grad():
-            for step, batch in tqdm(
+            for step, (img, label) in tqdm(
                 enumerate(self.val_loader), desc="val steps", total=len(self.val_loader)
             ):
-                img, label = map(lambda x: x.to(self.device), batch)
+                img = img.to(self.device)
+                if self.label_type != "direction":
+                    label = label.to(self.device)
 
                 output = self.model(img)
                 if self.label_type == 'direction':
