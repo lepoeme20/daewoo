@@ -30,19 +30,19 @@ def make_target_dist(target, window_size):
     target_dist = torch.FloatTensor(target.shape[0], 120)
     target_dist = target_dist.zero_()
 
-    target_dist = target_dist.scatter_(1, target.view(-1,1), 1)
+    target_dist = target_dist.scatter_(1, target.view(-1, 1), 1)
     for i in range(1, window_size + 1):
         for j in [1, -1]:
             window_idx = target + i * j
             window_idx[window_idx < 0] += 120
             window_idx[window_idx > 119] -= 120
-            target_dist = target_dist.scatter_(1, window_idx.view(-1,1), 1/(i + 1))
+            target_dist = target_dist.scatter_(1, window_idx.view(-1, 1), 1/(i + 1))
     return target_dist.to(device)
 
 
 def softXEnt(input, target, window_size):
     target_dist = make_target_dist(target, window_size)
-    logprobs = torch.nn.functional.log_softmax(input, dim = 1)
+    logprobs = torch.nn.functional.log_softmax(input, dim=1)
     return  -(target_dist * logprobs).sum() / input.shape[0]
 
 

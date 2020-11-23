@@ -45,7 +45,9 @@ class Trainer:
         self.lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.1, patience=20
         )
-        self.train_loader, self.val_loader, self.test_loader = self.get_dataloader()
+        self.train_loader, self.val_loader, self.test_loader = get_dataloader(self.path, self.batch_size,
+                                                                              self.label_type, iid=self.iid,
+                                                                              transform=self.transform, img_size=224)
 
         ## model saving param
         self.save_path = config["ckpt_path"]
@@ -177,9 +179,15 @@ class Trainer:
                 img, label = map(lambda x: x.to(self.device), batch)
 
                 output = self.model(img)
-                mseloss = self.criterion(output.squeeze(), label)
-                maeloss = self.MAE(output.squeeze(), label)
-                mapeloss = self.MAPE(output.squeeze(), label)
+                if self.label_type == 'direction':
+                    _, output = torch.max(output.data, 1)
+                    output *= 3
+                    output += 1
+                    mseloss, maeloss, mapeloss = self.MSE_MAE_MAPE_dir(output, label)
+                else:
+                    mseloss = self.criterion(output.squeeze(), label)
+                    maeloss = self.MAE(output.squeeze(), label)
+                    mapeloss = self.MAPE(output.squeeze(), label)
 
                 loss_mse += mseloss.item()
                 loss_mae += maeloss.item()
@@ -205,6 +213,11 @@ class Trainer:
                 img, label = map(lambda x: x.to(self.device), batch)
 
                 output = self.model(img)
+                if self.label_type == 'direction':
+                    _, output = torch.max(output.data, 1)
+                    output *= 3
+                    output += 1
+
                 output = output.squeeze()
                 pred.append(output)
                 true.append(label)
@@ -219,3 +232,12 @@ class Trainer:
 
     def MAPE(self, pred: List[torch.tensor], true: List[torch.tensor]) -> torch.tensor:
         return torch.mean((pred - true).abs() / (true.abs() + 1e-8)) * 100  # percentage
+
+    def MSE_MAE_MAPE_dir(self, pred: List[torch.tensor], true: List[torch.tensor]) -> torch.tensor:
+        diff = (((pred - true).abs() - 180).abs() - 180).abs()
+        diff = diff.type(torch.FloatTensor).to(self.device)
+
+        mse = torch.mean(torch.pow(diff, 2))
+        mae = torch.mean(diff)
+        mape = torch.mean(diff / (true.abs() + 1e-8)) * 100
+        return mse, mae, mape
