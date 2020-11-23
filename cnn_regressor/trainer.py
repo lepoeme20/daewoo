@@ -45,9 +45,7 @@ class Trainer:
         self.lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.1, patience=20
         )
-        self.train_loader, self.val_loader, self.test_loader = get_dataloader(self.path, self.batch_size,
-                                                                              self.label_type, iid=self.iid,
-                                                                              transform=self.transform, img_size=224)
+        self.train_loader, self.val_loader, self.test_loader = self.get_dataloader()
 
         ## model saving param
         self.save_path = config["ckpt_path"]
@@ -58,7 +56,7 @@ class Trainer:
         self.eval_step = config["eval_step"]
         # self.best_val_loss = 1e8
         self.earlystopping = EarlyStopping(
-            verbose=True, path=os.path.join(self.save_path, "best_model.ckpt")
+            patience=50, verbose=True, path=os.path.join(self.save_path, "best_model.ckpt")
         )
 
     def get_dataloader(self) -> Tuple[DataLoader]:

@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--weight-decay", type=float, default=1e-3)
     parser.add_argument("--optimizer", type=str, default="sgd")
-    parser.add_argument("--epoch", type=int, default=200)
+    parser.add_argument("--epoch", type=int, default=100)
     parser.add_argument("--eval-step", type=int, default=200)
 
     parser.add_argument(
