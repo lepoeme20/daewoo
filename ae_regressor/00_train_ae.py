@@ -87,15 +87,32 @@ def main():
         checkpoint = torch.load(os.path.join(model_save_path, 'autoencoder.pkl'))
         autoencoder.module.load_state_dict(checkpoint['model'])
 
-        for i, (inputs,_) in enumerate(tst_loader):
+        latent_array = []
+        label_array = []
+
+        for i, (inputs, labels) in enumerate(tst_loader):
             f_inputs = inputs.view(inputs.size(0), -1).to(args.device)
             # ============ Forward ============
             criterion = nn.MSELoss()
             #_, outputs = autoencoder(inputs.view(inputs.size(0), -1).to(args.device))
-            _, outputs = autoencoder(f_inputs)
+            latent , outputs = autoencoder(f_inputs)
             loss = criterion(outputs, f_inputs)
             if i % 200 == 0:
                 print(f'loss btw test image - reconstructed: {loss:.4f}')
+
+            # ====== to visualize latent vector space ======
+            latent = latent.cpu().detach().numpy()
+            labels = labels.cpu().detach().numpy()
+            print(latent.shape)
+            #print(labels.shape)
+
+            latent_array.extend(latent)
+            #print(latent_array)
+            label_array.append(labels)
+        import numpy as np
+        np.savetxt('latent.csv', latent_array, delimiter= ',')
+        np.savetxt('label.csv',label_array, delimiter=',')
+
         exit(0)
 
     else:
