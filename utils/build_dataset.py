@@ -1,16 +1,22 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset
 from torchvision import transforms
-from torchvision.transforms.transforms import ToPILImage
 import cv2
 import numpy as np
 
 class BuildDataset(Dataset):
-    def __init__(self, df, transform, img_size):
+    def __init__(self, df, transform, img_size, label_type):
         self.img_path = df['image'].values
-        self.labels = df['label'].values
+        if label_type == 'height':
+            self.labels = df['height'].values
+        elif label_type == 'direction':
+            self.labels = df['direction'].values
+        else:
+            self.labels = df['period'].values
         self.transform = transform
         self.img_size = img_size
+        self.label_type = label_type
 
     def __len__(self):
         return len(self.labels)
@@ -19,8 +25,10 @@ class BuildDataset(Dataset):
         frame = cv2.imread(self.img_path[idx])
         if len(frame.shape) == 3:
             frame = frame[:, :, 0]
-        label = torch.tensor(self.labels[idx], dtype=torch.float)
-
+        if self.label_type == 'direction':
+            label = torch.tensor(self.labels[idx] // 3, dtype=torch.long)
+        else:
+            label = torch.tensor(self.labels[idx], dtype=torch.float)
         return self.get_transform(frame), label
 
     def get_transform(self, frame):
@@ -47,9 +55,9 @@ class BuildDataset(Dataset):
             frame -= mean
             frame /= std
             transform = transforms.Compose([
-                transforms.ToTensor(),
                 transforms.ToPILImage(),
                 transforms.Resize((self.img_size, self.img_size)),
                 transforms.ToTensor(),
+                nn.Sigmoid(),
             ])
         return transform(frame)

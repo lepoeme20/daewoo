@@ -1,8 +1,4 @@
-import cv2
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-import sys
 import pandas as pd
 
 def cal_time(time):
@@ -38,9 +34,9 @@ if __name__=='__main__':
     # set folder (date)
     folders = sorted(os.listdir(data_path))
 
-    total_img = list()
-    total_time = list()
-    total_label = list()
+    total_img, total_time, total_idx = [], [], []
+    total_direction, total_height, total_period = [], [], []
+    label_idx = 0
     for folder in folders:
         print(folder)
         # extract specific time and empty rows
@@ -53,24 +49,47 @@ if __name__=='__main__':
         all_imgs = sorted(os.listdir(os.path.join(data_path, folder)))
         _imgs = list(filter(lambda x: 7 <= int(x[8:10]) < 17, all_imgs))
 
-        label_list = list()
-        img_list = list()
-        time_list = list()
+        # create empty lists for append
+        height_list, direction_list, period_list = [], [], []
+        img_list, time_list, idx_list = [], [], []
 
         for idx in range(radar.shape[0]):
             time = radar['Date'].iloc[idx]
-            label = radar[' T.Hs'].iloc[idx]
+            height = radar[' T.Hs'].iloc[idx]
+            direction = radar[' T.Dp'].iloc[idx]
+            period = radar[' T.Tp'].iloc[idx]
+            # get proper images
             start, end = cal_time(time)
             imgs = list(filter(lambda x: start <= x[:-6] <= end, _imgs))
+            # save images
             image_path = [os.path.join(data_path, folder, impath) for impath in imgs]
             img_list.extend(image_path)
-            label_list.extend([label]*len(imgs))
+            # save label
+            height_list.extend([height]*len(imgs))
+            direction_list.extend([direction]*len(imgs))
+            period_list.extend([period]*len(imgs))
+            # save time
             time_list.extend([time]*len(imgs))
+            # save label index for i.i.d. condition sampling
+            idx_list.extend([label_idx]*len(imgs))
+            label_idx += 1
 
+        # append data
         total_img.extend(img_list)
         total_time.extend(time_list)
-        total_label.extend(label_list)
+        total_height.extend(height_list)
+        total_direction.extend(direction_list)
+        total_period.extend(period_list)
+        total_idx.extend(idx_list)
 
-    data_dict = {'time':total_time, 'image':total_img, 'label':total_label}
+    # create dictionary for build pandas dataframe
+    data_dict = {
+        'time':total_time,
+        'image':total_img,
+        'height':total_height,
+        'direction': total_direction,
+        'period': total_period,
+        'label_idx': total_idx
+    }
     df = pd.DataFrame(data_dict)
-    df.to_csv('./brave_data_label.csv')
+    df.to_csv('./brave_data_label.csv', index=False)

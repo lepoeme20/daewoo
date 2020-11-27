@@ -1,16 +1,13 @@
 import argparse
-import random
-import os
-from collections import OrderedDict
+import time
 
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 
 from model import ResNet34
-from model_utils import fix_seed, str2bool
 from trainer import Trainer
+from model_utils import str2bool, fix_seed, softXEnt
 
 
 def main(args):
@@ -24,7 +21,7 @@ def main(args):
         "momentum": args.momentum,
         "weight_decay": args.weight_decay,
         "optimizer": args.optimizer,
-        "criterion": nn.MSELoss(),
+        "criterion": softXEnt,
         "eval_step": args.eval_step,
         "fc_bias": bias,
         "label_type": args.label_type,
@@ -34,35 +31,20 @@ def main(args):
 
     fix_seed(args.seed)
     model = ResNet34(num_classes=args.num_classes, fc_bias=bias)
-
-    # iid = True if args.bias else False
-    # norm = args.transform
-    # checkpoint = (
-    #     torch.load(f"checkpoints_iid_norm{norm}/best_model.ckpt")
-    #     if iid
-    #     else torch.load(f"checkpoints_norm{norm}/best_model.ckpt")
-    # )
-    checkpoint = torch.load(os.path.join(config["ckpt_path"], "best_model.ckpt"))
-    new_state_dict = OrderedDict()
-
-    for k, v in checkpoint.items():
-        name = k[7:]  # remove 'module.' of dataparallel
-        new_state_dict[name] = v
-
-    model.load_state_dict(new_state_dict)
     trainer = Trainer(model=model, config=config)
 
-    if args.mode == "test":
-        mse, mae, mape = trainer.test()
-        print()
-        print("Test Finished.")
-        print("** Test Loss (MSE): {:.3f}".format(mse))
-        print("** Test Loss (MAE): {:.3f}".format(mae))
-        print("** Test Loss (MAPE): {:.3f}".format(mape))
-        return
+    t = time.time()
+    # global_step, best_val_loss = trainer.train()
+    trainer.train()
+    train_time = time.time() - t
+    m, s = divmod(train_time, 60)
+    h, m = divmod(m, 60)
 
-    pred, true = trainer.test_values()
-    return pred, true
+    print()
+    print("Training Finished.")
+    print("** Total Time: {}-hour {}-minute".format(int(h), int(m)))
+    # print("** Total Step: {}".format(global_step))
+    # print("** Best Validation Loss: {:.3f}".format(best_val_loss))
 
 
 if __name__ == "__main__":
@@ -72,13 +54,13 @@ if __name__ == "__main__":
         "--path", type=str, default="./preprocessing/brave_data_label.csv"
     )
     parser.add_argument("--ckpt-path", type=str, default="./checkpoints/")
-    parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--num-classes", type=int, default=120)
     parser.add_argument("--lr", type=float, default=0.005)
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--weight-decay", type=float, default=1e-3)
     parser.add_argument("--optimizer", type=str, default="sgd")
-    parser.add_argument("--epoch", type=int, default=200)
+    parser.add_argument("--epoch", type=int, default=100)
     parser.add_argument("--eval-step", type=int, default=200)
 
     parser.add_argument(
@@ -92,7 +74,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--bias", type=str2bool, default="true", help="bias in fc layer"
     )
-    parser.add_argument("--mode", type=str, default="test")
 
     args, _ = parser.parse_known_args()
 
