@@ -19,6 +19,27 @@ def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 
+def get_data(data_loader, device, model):
+    print(f"Latent vectors will be extracted on {device}")
+    x = np.empty([0, 32])
+    y = np.empty([0])
+    for i, (inputs, labels) in enumerate((data_loader)):
+        encoded = model(inputs.view(inputs.size(0), -1).to(device))
+
+        latent_vector = encoded.cpu().data.numpy()
+        x = np.r_[x, latent_vector]
+        y = np.r_[y, labels.cpu().data.numpy()]
+
+        if i%20 == 0:
+            print(f'Progress: [{i}/{len(data_loader)}]')
+    # inputs, labels = next(iter(data_loader))
+    # encoded = model(inputs.view(inputs.size(0), -1).to(device))
+    # latent_vector = encoded.cpu().data.numpy()
+    # x = np.r_[x, latent_vector]
+    # y = np.r_[y, labels.cpu().data.numpy()]
+    return x, y
+
+
 def main():
     if args.use_original:
         df = pd.read_csv(args.csv_path)
@@ -33,7 +54,7 @@ def main():
         trn_loader, dev_loader, tst_loader = get_dataloader(
             csv_path=args.csv_path,
             batch_size=args.batch_size,
-            dtype=args.data_type,
+            dtype=args.label_type,
             iid=args.iid,
             transform=args.norm_type,
             img_size=args.img_size
@@ -84,7 +105,7 @@ def main():
         if args.use_original:
             x_tst, y_tst = F.get_original_data(args, tst, 'tst')
         else:
-            x_tst, y_tst = F.get_data(args, trn_loader, encoder, 'tst')
+            x_tst, y_tst = F.get_data(args, tst_loader, encoder, 'tst')
 
         d_test = lgb.Dataset(data=x_tst, label = y_tst)
         y_pred = best_model.predict(d_test)
@@ -125,6 +146,7 @@ def main():
             verbose_eval=100,
             early_stopping_rounds=100
             )
+
         predict_dev = model.predict(x_dev)
         mae = mean_absolute_error(y_dev, predict_dev)
         mape = mean_absolute_percentage_error(y_dev, predict_dev)
@@ -133,7 +155,6 @@ def main():
 
         with open(os.path.join(model_path, 'lightgbm.pkl'), 'wb') as f:
             pickle.dump(model, f)
-
 
 if __name__ == '__main__':
     global args

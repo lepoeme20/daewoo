@@ -22,6 +22,7 @@ class Trainer:
         ## model param
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.bias = config["fc_bias"]
+        self.label_type = config["label_type"]
         self.iid = config["iid"]
         self.transform = config["transform"]
         self.path = config["csv_path"]
@@ -55,13 +56,14 @@ class Trainer:
         self.eval_step = config["eval_step"]
         # self.best_val_loss = 1e8
         self.earlystopping = EarlyStopping(
-            verbose=True, path=os.path.join(self.save_path, "best_model.ckpt")
+            patience=50, verbose=True, path=os.path.join(self.save_path, "best_model.ckpt")
         )
 
     def get_dataloader(self) -> Tuple[DataLoader]:
         return get_dataloader(
             self.path,
             batch_size=self.batch_size,
+            label_type=self.label_type,
             iid=self.iid,
             transform=self.transform,
         )
@@ -82,14 +84,19 @@ class Trainer:
         start_time = time.time()
 
         self.model.train()
-        for step, batch in tqdm(
+        for step, (img, label) in tqdm(
             enumerate(self.train_loader), desc="steps", total=len(self.train_loader)
         ):
-            img, label = map(lambda x: x.to(self.device), batch)
+            img = img.to(self.device)
+            if self.label_type != "direction":
+                label = label.to(self.device)
             output = self.model(img)
 
             self.optimizer.zero_grad()
-            loss = self.criterion(output.squeeze(), label)
+            if self.label_type == 'direction':
+                loss = self.criterion(output, label, window_size=2)
+            else:
+                loss = self.criterion(output.squeeze(), label)
             loss.backward()
             self.optimizer.step()
 
@@ -136,13 +143,18 @@ class Trainer:
 
         self.model.eval()
         with torch.no_grad():
-            for step, batch in tqdm(
+            for step, (img, label) in tqdm(
                 enumerate(self.val_loader), desc="val steps", total=len(self.val_loader)
             ):
-                img, label = map(lambda x: x.to(self.device), batch)
+                img = img.to(self.device)
+                if self.label_type != "direction":
+                    label = label.to(self.device)
 
                 output = self.model(img)
-                loss = self.criterion(output.squeeze(), label)
+                if self.label_type == 'direction':
+                    loss = self.criterion(output, label, window_size=2)
+                else:
+                    loss = self.criterion(output.squeeze(), label)
 
                 val_loss += loss.item()
 
@@ -165,9 +177,15 @@ class Trainer:
                 img, label = map(lambda x: x.to(self.device), batch)
 
                 output = self.model(img)
-                mseloss = self.criterion(output.squeeze(), label)
-                maeloss = self.MAE(output.squeeze(), label)
-                mapeloss = self.MAPE(output.squeeze(), label)
+                if self.label_type == 'direction':
+                    _, output = torch.max(output.data, 1)
+                    output *= 3
+                    output += 1
+                    mseloss, maeloss, mapeloss = self.MSE_MAE_MAPE_dir(output, label)
+                else:
+                    mseloss = self.criterion(output.squeeze(), label)
+                    maeloss = self.MAE(output.squeeze(), label)
+                    mapeloss = self.MAPE(output.squeeze(), label)
 
                 loss_mse += mseloss.item()
                 loss_mae += maeloss.item()
@@ -193,6 +211,11 @@ class Trainer:
                 img, label = map(lambda x: x.to(self.device), batch)
 
                 output = self.model(img)
+                if self.label_type == 'direction':
+                    _, output = torch.max(output.data, 1)
+                    output *= 3
+                    output += 1
+
                 output = output.squeeze()
                 pred.append(output)
                 true.append(label)
@@ -207,3 +230,12 @@ class Trainer:
 
     def MAPE(self, pred: List[torch.tensor], true: List[torch.tensor]) -> torch.tensor:
         return torch.mean((pred - true).abs() / (true.abs() + 1e-8)) * 100  # percentage
+
+    def MSE_MAE_MAPE_dir(self, pred: List[torch.tensor], true: List[torch.tensor]) -> torch.tensor:
+        diff = (((pred - true).abs() - 180).abs() - 180).abs()
+        diff = diff.type(torch.FloatTensor).to(self.device)
+
+        mse = torch.mean(torch.pow(diff, 2))
+        mae = torch.mean(diff)
+        mape = torch.mean(diff / (true.abs() + 1e-8)) * 100
+        return mse, mae, mape
