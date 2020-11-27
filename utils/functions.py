@@ -24,12 +24,13 @@ def create_model(args):
     return autoencoder
 
 
-def get_original_data(args, data, sampling_ratio):
-    root_path = f'./ae_regressor/trn_data/{args.label_type}/norm_{args.norm_type}/{args.data_type}/img_flatten/original'
+def get_original_data(args, data, phase):
+    root_path = f'./ae_regressor/data/{args.label_type}/norm_{args.norm_type}/{args.data_type}/img_flatten/original'
     os.makedirs(root_path, exist_ok=True)
-    data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
+    data_path = os.path.join(root_path, f'{phase}_seed_{args.seed}.pkl')
+    print(data_path)
 
-    if os.path.isfile(data_path) and not args.test:
+    if os.path.isfile(data_path):
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
         x, y = data['x'], data['y']
@@ -43,11 +44,6 @@ def get_original_data(args, data, sampling_ratio):
             y = data['period'].values
         x = np.empty([0, 32*32])
 
-        if sampling_ratio != 1.:
-            idx = np.random.choice(np.arange(len(y)), int(len(y)*sampling_ratio), replace=False)
-            img_path = img_path[idx]
-            y = y[idx]
-
         for i in range(len(img_path)):
             frame = cv2.imread(img_path[i])
             if len(frame.shape) == 3:
@@ -60,21 +56,20 @@ def get_original_data(args, data, sampling_ratio):
             if i%1000 == 0:
                 print(f'Progress: [{i}/{len(img_path)}]')
 
-        if not args.test:
-            print("save data")
-            data = {'x': x, 'y': y}
-            with open(data_path, 'wb') as f:
-                pickle.dump(data, f)
+        print("save data")
+        data = {'x': x, 'y': y}
+        with open(data_path, 'wb') as f:
+            pickle.dump(data, f)
 
     return x, y
 
-def get_data(args, data_loader, model, sampling_ratio):
+def get_data(args, data_loader, model, phase):
     print(f"Latent vectors will be extracted on {args.device}")
-    root_path = f'./ae_regressor/trn_data/{args.label_type}/norm_{args.norm_type}/{args.data_type}/{args.ae_type}'
+    root_path = f'./ae_regressor/data/{args.label_type}/norm_{args.norm_type}/{args.data_type}/{args.ae_type}'
     os.makedirs(root_path, exist_ok=True)
-    data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
+    data_path = os.path.join(root_path, f'{phase}_seed_{args.seed}.pkl')
 
-    if os.path.isfile(data_path) and not args.test:
+    if os.path.isfile(data_path):
         print("Load data")
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
@@ -95,16 +90,10 @@ def get_data(args, data_loader, model, sampling_ratio):
             if i%20 == 0:
                 print(f'Progress: [{i}/{len(data_loader)}]')
 
-        if sampling_ratio != 1.:
-            idx = np.random.choice(np.arange(len(y)), int(len(y)*sampling_ratio), replace=False)
-            x = x[idx]
-            y = y[idx]
-
-        if not args.test:
-            print("save data")
-            data = {'x': x, 'y': y}
-            with open(data_path, 'wb') as f:
-                pickle.dump(data, f)
+        print("save data")
+        data = {'x': x, 'y': y}
+        with open(data_path, 'wb') as f:
+            pickle.dump(data, f)
 
     return x, y
 
