@@ -6,7 +6,6 @@ import lightgbm as lgb
 from sklearn.metrics import mean_absolute_error
 import pickle
 # import matplotlib.pyplot as plt
-# TODO: 시각화 추가
 import numpy as np
 import pandas as pd
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
@@ -21,15 +20,19 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 def get_data(data_loader, device, model):
     print(f"Latent vectors will be extracted on {device}")
-    x = np.empty([0, 32])
-    y = np.empty([0])
+    num_data = len(data_loader)
+    totla_x = np.empty([num_data, 32])
+    total_y = np.empty([num_data])
+    # x = np.empty([0, 32])
+    # y = np.empty([0])
     for i, (inputs, labels) in enumerate((data_loader)):
         encoded = model(inputs.view(inputs.size(0), -1).to(device))
 
         latent_vector = encoded.cpu().data.numpy()
-        x = np.r_[x, latent_vector]
-        y = np.r_[y, labels.cpu().data.numpy()]
-
+        # x = np.r_[x, latent_vector]
+        # y = np.r_[y, labels.cpu().data.numpy()]
+        total_x[i] = x
+        total_y[i] = y
         if i%20 == 0:
             print(f'Progress: [{i}/{len(data_loader)}]')
     # inputs, labels = next(iter(data_loader))
@@ -37,7 +40,8 @@ def get_data(data_loader, device, model):
     # latent_vector = encoded.cpu().data.numpy()
     # x = np.r_[x, latent_vector]
     # y = np.r_[y, labels.cpu().data.numpy()]
-    return x, y
+    # return x, y
+    return total_x, total_y
 
 
 def main():
@@ -107,11 +111,15 @@ def main():
         else:
             x_tst, y_tst = F.get_data(args, tst_loader, encoder, 'tst')
 
-        d_test = lgb.Dataset(data=x_tst, label = y_tst)
-        y_pred = best_model.predict(d_test)
+        y_pred = best_model.predict(x_tst)
         mae = mean_absolute_error(y_tst, y_pred)
         mape = mean_absolute_percentage_error(y_true=y_tst, y_pred=y_pred)
         print(f"[Test] MAE:{mae}, MAPE:{mape}")
+
+        mean_value = np.full_like(y_tst, np.mean(y_tst))
+        mae = mean_absolute_error(y_tst, mean_value)
+        mape = mean_absolute_percentage_error(y_true=y_tst, y_pred=mean_value)
+        print(f"[Mean Value] MAE:{mae}, MAPE:{mape}")
 
     else:
         # train data 추출
