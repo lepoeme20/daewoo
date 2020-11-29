@@ -108,7 +108,7 @@ def main():
             x_tst, y_tst = F.get_data(args, tst_loader, encoder, 'tst')
 
         d_test = lgb.Dataset(data=x_tst, label = y_tst)
-        y_pred = best_model.predict(d_test)
+        y_pred = best_model.predict(x_tst)
         mae = mean_absolute_error(y_tst, y_pred)
         mape = mean_absolute_percentage_error(y_true=y_tst, y_pred=y_pred)
         print(f"[Test] MAE:{mae}, MAPE:{mape}")
