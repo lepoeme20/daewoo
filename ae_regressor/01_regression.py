@@ -22,27 +22,20 @@ def mean_absolute_percentage_error(y_true, y_pred):
 def get_data(data_loader, device, model):
     print(f"Latent vectors will be extracted on {device}")
     num_data = len(data_loader)
-    totla_x = np.empty([num_data, 32])
+    total_x = np.empty([num_data, 32])
     total_y = np.empty([num_data])
-    # x = np.empty([0, 32])
-    # y = np.empty([0])
+
     for i, (inputs, labels) in enumerate((data_loader)):
         start = time.time()
         encoded = model(inputs.view(inputs.size(0), -1).to(device))
 
         latent_vector = encoded.cpu().data.numpy()
-        # x = np.r_[x, latent_vector]
-        # y = np.r_[y, labels.cpu().data.numpy()]
+
         total_x[i] = latent_vector
         total_y[i] = labels.cpu().data.numpy()
         if i%20 == 0:
             print(f"Progress: [{i}/{len(data_loader)}] | Time: {time.time()-start}'s")
-    # inputs, labels = next(iter(data_loader))
-    # encoded = model(inputs.view(inputs.size(0), -1).to(device))
-    # latent_vector = encoded.cpu().data.numpy()
-    # x = np.r_[x, latent_vector]
-    # y = np.r_[y, labels.cpu().data.numpy()]
-    # return x, y
+
     return total_x, total_y
 
 

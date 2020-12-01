@@ -33,7 +33,7 @@ def get_original_data(args, data, phase):
     if os.path.isfile(data_path):
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
-        x, y = data['x'], data['y']
+        total_x, y = data['x'], data['y']
     else:
         img_path = data['image'].values
         if args.label_type == 'height':
@@ -75,7 +75,7 @@ def get_data(args, data_loader, model, phase):
         print("Load data")
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
-        x, y = data['x'], data['y']
+        total_x, total_y = data['x'], data['y']
     else:
         print("build data")
         total_x = np.empty([len(data_loader), 64])
@@ -87,9 +87,7 @@ def get_data(args, data_loader, model, phase):
                 latent_vector = torch.squeeze(_gap(encoded)).cpu().data.numpy()
             else:
                 latent_vector = encoded.cpu().data.numpy()
-            # x = np.r_[x, latent_vector]
-            # y = np.r_[y, labels.cpu().data.numpy()]
-            total_x[i] = letent_vector
+            total_x[i] = latent_vector
             total_y[i] = labels.cpu().data.numpy()
             if i%20 == 0:
                 print(f'Progress: [{i}/{len(data_loader)}]')
@@ -106,3 +104,11 @@ def build_input(args, inputs):
 
 def _gap(inputs):
     return nn.AdaptiveAvgPool2d((1, 1))(inputs)
+
+def get_cls_label(labels):
+    labels[labels < 1.17] = 0
+    labels[labels >= 1.17] = 1
+    labels[labels >= 1.3] = 2
+    labels[labels >= 2.0] = 3
+
+    return labels.type(torch.LongTensor)
