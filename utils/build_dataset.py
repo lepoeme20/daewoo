@@ -58,6 +58,5 @@ class BuildDataset(Dataset):
                 transforms.ToPILImage(),
                 transforms.Resize((self.img_size, self.img_size)),
                 transforms.ToTensor(),
-                nn.Sigmoid(),
             ])
-        return transform(frame)
+        return torch.sigmoid(transform(frame))
