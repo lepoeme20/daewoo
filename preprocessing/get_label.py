@@ -119,4 +119,8 @@ if __name__=='__main__':
         )
     df['iid_phase'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
 
+<<<<<<< HEAD
     df.to_csv('./brave_data_label.csv', index=False)
+=======
+    df.to_csv('./brave_data_label.csv', index=False)
+>>>>>>> 51464bf4f064749b95dfd05895d900a239098b22
