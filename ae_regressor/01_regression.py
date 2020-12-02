@@ -103,15 +103,17 @@ def main():
 
         if args.use_original:
             x_tst, y_tst = F.get_original_data(args, tst, 'tst')
+            _, y_trn = F.get_original_data(args, trn, 'trn')
         else:
             x_tst, y_tst = F.get_data(args, tst_loader, encoder, 'tst')
+            _, y_trn = F.get_data(args, trn_loader, encoder, 'trn')
 
         y_pred = best_model.predict(x_tst)
         mae = mean_absolute_error(y_tst, y_pred)
         mape = mean_absolute_percentage_error(y_true=y_tst, y_pred=y_pred)
         print(f"[Test] MAE:{mae}, MAPE:{mape}")
 
-        mean_value = np.full_like(y_tst, np.mean(y_tst))
+        mean_value = np.full_like(y_tst, np.mean(y_trn))
         mae = mean_absolute_error(y_tst, mean_value)
         mape = mean_absolute_percentage_error(y_true=y_tst, y_pred=mean_value)
         print(f"[Mean Value] MAE:{mae}, MAPE:{mape}")
