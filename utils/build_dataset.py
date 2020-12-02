@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import cv2
 import numpy as np
+from PIL import Image
 
 class BuildDataset(Dataset):
     def __init__(self, df, transform, img_size, label_type):
@@ -38,6 +39,7 @@ class BuildDataset(Dataset):
                 transforms.Resize((self.img_size, self.img_size)),
                 transforms.ToTensor(),
             ])
+            return transform(frame)
         elif self.transform == 1:
             transform = transforms.Compose([
                 transforms.ToPILImage(),
@@ -45,6 +47,7 @@ class BuildDataset(Dataset):
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.3352], std=[0.0647]),
             ])
+            return transform(frame)
         else:
             # z score scaling
             frame = frame.astype(np.float32)
@@ -54,9 +57,12 @@ class BuildDataset(Dataset):
             # normalize 진행
             frame -= mean
             frame /= std
-            transform = transforms.Compose([
-                transforms.ToPILImage(),
-                transforms.Resize((self.img_size, self.img_size)),
-                transforms.ToTensor(),
-            ])
-        return torch.sigmoid(transform(frame))
+
+            # Resize, 확대시 cv2.INTER_CUBIC
+            frame = cv2.resize(
+                frame,
+                dsize=(self.img_size, self.img_size),
+                interpolation=cv2.INTER_AREA
+                )
+
+            return transforms.ToTensor()(frame)
