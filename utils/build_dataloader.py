@@ -8,17 +8,14 @@ def get_dataloader(csv_path, batch_size, label_type, iid=False, transform=2, img
 
     if iid:
         # i.i.d condition
-        unique_id = np.unique(df['label_idx'])
-        np.random.shuffle(unique_id)
-        trn_idx, dev_idx, tst_idx = np.split(
-            unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
-            )
-        trn = df.loc[df['label_idx'].isin(trn_idx)]
-        dev = df.loc[df['label_idx'].isin(dev_idx)]
-        tst = df.loc[df['label_idx'].isin(tst_idx)]
+        trn = df.loc[df['iid_phase'] == 'train']
+        dev = df.loc[df['iid_phase'] == 'dev']
+        tst = df.loc[df['iid_phase'] == 'test']
     else:
         # time series condition
-        trn, dev, tst = np.split(df, [int(.6*len(df)), int(.8*len(df))])
+        trn = df.loc[df['time_phase'] == 'train']
+        dev = df.loc[df['time_phase'] == 'dev']
+        tst = df.loc[df['time_phase'] == 'test']
 
     trn_dataset = BuildDataset(trn, transform, img_size, label_type)
     dev_dataset = BuildDataset(dev, transform, img_size, label_type)
