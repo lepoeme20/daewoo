@@ -222,3 +222,6 @@ save_fig
 .idea
 trn_data
 data
+_4kickoff.py
+unseen_data
+pretrained
