@@ -29,7 +29,7 @@ def set_parser(parser):
         help="0: ToTensor, 1: Ordinary image normalizaeion, 2: Image by Image normalization"
     )
     base_args.add_argument(
-        "--batch-size", type=int, help="Batch size"
+        "--batch-size", type=int, default=32, help="Batch size"
     )
     base_args.add_argument(
         "--seed", type=int, default=22, help="seed number"
