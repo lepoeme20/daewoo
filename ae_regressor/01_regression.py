@@ -19,26 +19,6 @@ def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 
-def get_data(data_loader, device, model):
-    print(f"Latent vectors will be extracted on {device}")
-    num_data = len(data_loader)
-    total_x = np.empty([num_data, 32])
-    total_y = np.empty([num_data])
-
-    for i, (inputs, labels) in enumerate((data_loader)):
-        start = time.time()
-        encoded = model(inputs.view(inputs.size(0), -1).to(device))
-
-        latent_vector = encoded.cpu().data.numpy()
-
-        total_x[i] = latent_vector
-        total_y[i] = labels.cpu().data.numpy()
-        if i%20 == 0:
-            print(f"Progress: [{i}/{len(data_loader)}] | Time: {time.time()-start}'s")
-
-    return total_x, total_y
-
-
 def main():
     if args.use_original:
         df = pd.read_csv(args.csv_path)
