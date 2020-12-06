@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import numpy as np
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -26,7 +27,7 @@ class Trainer:
             )
 
         # data loader
-        self.trn_loader, self.dev_loader, _ = get_dataloader(
+        self.trn_loader, self.dev_loader, self.tst_loader = get_dataloader(
                 csv_path=args.csv_path,
                 batch_size=args.batch_size,
                 label_type=args.label_type,
@@ -99,7 +100,7 @@ class Trainer:
 
             #################### Logging ###################
             print("[Train] Epoch {}/{} Batch {}/{} Loss: {:.4f}".format(
-                epoch, args.epochs, step, len(self.trn_loader), loss.item()
+                epoch+1, args.epochs, step+1, len(self.trn_loader), loss.item()
                 ), end='\r')
 
     def _dev_loop(self, epoch, criterion, best_loss, save_path):
@@ -135,6 +136,49 @@ class Trainer:
             }, save_path)
         return best_loss
 
+
+    def inference(self):
+        self.model.to(self.device)
+        self.model.fc = nn.Linear(self.model.fc.in_features, 1).to(self.device)
+        loss_mae = 0.0
+        loss_mape = 0.0
+
+        # load the saved regressor
+        regressor_path = os.path.join(self.model_path, 'regressor.pt')
+        checkpoint = torch.load(regressor_path)
+        # check DataParallel
+        if isinstance(self.model, nn.DataParallel):
+            self.model.module.load_state_dict(checkpoint['model_state_dict'])
+        else:
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.model.eval()
+        with torch.no_grad():
+            for step, batch in tqdm(
+                enumerate(self.tst_loader),
+                desc="test steps",
+                total=len(self.tst_loader),
+            ):
+                img, label = map(lambda x: x.to(self.device), batch)
+
+                output, _ = self.model(img)
+                maeloss = self.MAE(output.squeeze(), label)
+                mapeloss = self.MAPE(output.squeeze(), label)
+
+                loss_mae += maeloss.item()
+                loss_mape += mapeloss.item()
+
+        loss_mae /= step + 1
+        loss_mape /= step + 1
+
+        return loss_mae, loss_mape
+
+    def MAE(self, pred, true):
+        return torch.mean((pred - true).abs())
+
+    def MAPE(self, pred, true):
+        return torch.mean((pred - true).abs() / (true.abs() + 1e-8)) * 100
+
+
 if __name__ == '__main__':
     # Set random seed for reproducibility
     parser = argparse.ArgumentParser()
@@ -162,7 +206,7 @@ if __name__ == '__main__':
         "--seed", type=int, default=22, help="seed number"
     )
     parser.add_argument(
-        "--label-type", type=int, choices=[0, 1, 2], 
+        "--label-type", type=int, choices=[0, 1, 2],
         help="0: Height, 1: Direction, 2: Period"
     )
     parser.add_argument(
@@ -195,9 +239,14 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(SEED)
 
     trainer = Trainer(args)
-    if args.pretrain:
-        print("Pretrain with classification task is started")
-        trainer.pretrain()
+    if args.test:
+        mae, mape = trainer.inference()
+        print(f"MAE: {mae}")
+        print(f"MAPE: {mape}")
     else:
-        print("Training CNN Regressor is started")
+        if args.pretrain:
+            print("Pretrain with classification task is started")
+            trainer.pretrain()
+        else:
+            print("Training CNN Regressor is started")
         trainer.regression()
