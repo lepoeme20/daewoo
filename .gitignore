@@ -1,5 +1,7 @@
 runs/
 checkpoints/
+cnn_regressor/*.ipynb
+*.ipynb
 
 # Created by https://www.toptal.com/developers/gitignore/api/windows,jupyternotebooks,macos,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,jupyternotebooks,macos,python
@@ -220,3 +222,6 @@ save_fig
 .idea
 trn_data
 data
+_4kickoff.py
+unseen_data
+pretrained

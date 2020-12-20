@@ -24,15 +24,16 @@ def create_model(args):
     return autoencoder
 
 
-def get_original_data(args, data, sampling_ratio):
-    root_path = f'./ae_regressor/trn_data/{args.label_type}/norm_{args.norm_type}/{args.data_type}/img_flatten/original'
+def get_original_data(args, data, phase):
+    root_path = f'./ae_regressor/data/{args.label_type}/norm_{args.norm_type}/{args.data_type}/img_flatten/original'
     os.makedirs(root_path, exist_ok=True)
-    data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
+    data_path = os.path.join(root_path, f'{phase}_seed_{args.seed}.pkl')
+    print(data_path)
 
-    if os.path.isfile(data_path) and not args.test:
+    if os.path.isfile(data_path):
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
-        x, y = data['x'], data['y']
+        total_x, y = data['x'], data['y']
     else:
         img_path = data['image'].values
         if args.label_type == 'height':
@@ -41,12 +42,8 @@ def get_original_data(args, data, sampling_ratio):
             y= data['direction'].values
         else:
             y = data['period'].values
-        x = np.empty([0, 32*32])
-
-        if sampling_ratio != 1.:
-            idx = np.random.choice(np.arange(len(y)), int(len(y)*sampling_ratio), replace=False)
-            img_path = img_path[idx]
-            y = y[idx]
+        # x = np.empty([0, 32*32])
+        total_x = np.empty([len(img_path), 32*32])
 
         for i in range(len(img_path)):
             frame = cv2.imread(img_path[i])
@@ -56,33 +53,33 @@ def get_original_data(args, data, sampling_ratio):
 
             # make a 1-dimensional view of arr
             flat_arr = frame.ravel().reshape(1, -1)
-            x = np.r_[x, flat_arr]
+            # x = np.r_[x, flat_arr]
+            total_x[i] = flat_arr
             if i%1000 == 0:
                 print(f'Progress: [{i}/{len(img_path)}]')
 
-        if not args.test:
-            print("save data")
-            data = {'x': x, 'y': y}
-            with open(data_path, 'wb') as f:
-                pickle.dump(data, f)
+        print("save data")
+        data = {'x': total_x, 'y': y}
+        with open(data_path, 'wb') as f:
+            pickle.dump(data, f)
 
-    return x, y
+    return total_x, y
 
-def get_data(args, data_loader, model, sampling_ratio):
+def get_data(args, data_loader, model, phase):
     print(f"Latent vectors will be extracted on {args.device}")
-    root_path = f'./ae_regressor/trn_data/{args.label_type}/norm_{args.norm_type}/{args.data_type}/{args.ae_type}'
+    root_path = f'./ae_regressor/data/{args.label_type}/norm_{args.norm_type}/{args.data_type}/{args.ae_type}'
     os.makedirs(root_path, exist_ok=True)
-    data_path = os.path.join(root_path, f'sampling_{sampling_ratio}_seed_{args.seed}.pkl')
+    data_path = os.path.join(root_path, f'{phase}_seed_{args.seed}.pkl')
 
-    if os.path.isfile(data_path) and not args.test:
+    if os.path.isfile(data_path):
         print("Load data")
         with open(data_path, 'rb') as f:
             data = pickle.load(f)
-        x, y = data['x'], data['y']
+        total_x, total_y = data['x'], data['y']
     else:
         print("build data")
-        x = np.empty([0, 64])
-        y = np.empty([0])
+        total_x = np.empty([len(data_loader), 64])
+        total_y = np.empty([len(data_loader)])
 
         for i, (inputs, labels) in enumerate((data_loader)):
             encoded = model(build_input(args, inputs))
@@ -90,26 +87,28 @@ def get_data(args, data_loader, model, sampling_ratio):
                 latent_vector = torch.squeeze(_gap(encoded)).cpu().data.numpy()
             else:
                 latent_vector = encoded.cpu().data.numpy()
-            x = np.r_[x, latent_vector]
-            y = np.r_[y, labels.cpu().data.numpy()]
+            total_x[i] = latent_vector
+            total_y[i] = labels.cpu().data.numpy()
             if i%20 == 0:
                 print(f'Progress: [{i}/{len(data_loader)}]')
 
-        if sampling_ratio != 1.:
-            idx = np.random.choice(np.arange(len(y)), int(len(y)*sampling_ratio), replace=False)
-            x = x[idx]
-            y = y[idx]
+        print("save data")
+        data = {'x': total_x, 'y': total_y}
+        with open(data_path, 'wb') as f:
+            pickle.dump(data, f)
 
-        if not args.test:
-            print("save data")
-            data = {'x': x, 'y': y}
-            with open(data_path, 'wb') as f:
-                pickle.dump(data, f)
-
-    return x, y
+    return total_x, total_y
 
 def build_input(args, inputs):
     return inputs.to(args.device) if args.cae else inputs.view(inputs.size(0), -1).to(args.device)
 
 def _gap(inputs):
     return nn.AdaptiveAvgPool2d((1, 1))(inputs)
+
+def get_cls_label(labels):
+    labels[labels < 1.17] = 0
+    labels[labels >= 1.17] = 1
+    labels[labels >= 1.3] = 2
+    labels[labels >= 2.0] = 3
+
+    return labels.type(torch.LongTensor)

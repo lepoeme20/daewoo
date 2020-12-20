@@ -24,7 +24,6 @@ def get_args():
     params, _ = parser.parse_known_args()
     return params
 
-
 def cal_time(time):
     full_time = ''.join(time[:10].split('-')) + ''.join(time[11:].split(':'))
     h = full_time[8:10]
@@ -45,6 +44,15 @@ def cal_time(time):
     end = ''.join((_end[:10], end_m, _end[12:]))
 
     return start, end
+
+def set_phase(row, trn_idx, dev_idx, tst_idx):
+    if row['label_idx'] in trn_idx:
+        phase = 'train'
+    elif row['label_idx'] in dev_idx:
+        phase = 'dev'
+    elif row['label_idx'] in tst_idx:
+        phase = 'test'
+    return phase
 
 if __name__=='__main__':
     args = get_args()
@@ -189,4 +197,21 @@ if __name__=='__main__':
         'label_idx': total_idx
     }
     df = pd.DataFrame(data_dict)
+
+    np.random.seed(22)
+
+    # Time Series
+    unique_id = np.unique(df['label_idx'])
+    trn_idx, dev_idx, tst_idx = np.split(
+        unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
+        )
+    df['time_phase'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
+
+    # i.i.d condition
+    np.random.shuffle(unique_id)
+    trn_idx, dev_idx, tst_idx = np.split(
+        unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
+        )
+    df['iid_phase'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
+
     df.to_csv(f'./{args.dataset}_data_label.csv', index=False)
