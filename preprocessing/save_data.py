@@ -24,13 +24,13 @@ def get_args():
         '--num-worker', type=int, default=4, help='# of workers for Pool'
     )
     params, _ = parser.parse_known_args()
-    params.save_path = os.path.join(params.data_path, 'crop')
+    params.save_path = f"{params.data_path}_crop"
     return params
 
 
 def preprocessing(img_name, data_path, folder, save_path):
     try:
-        print(img_name, data_path, folder, save_path)
+        os.makedirs(os.path.join(save_path, folder), exist_ok=True)
         img = cv2.imread(os.path.join(data_path, folder, img_name), cv2.IMREAD_GRAYSCALE)
         img_gray = img.astype(np.float32)
 
@@ -108,6 +108,6 @@ if __name__=='__main__':
     elif args.dataset == 'kmou':
         for camera in ("PORT", "STBD"):
             data_folders = sorted(os.listdir(os.path.join(args.data_path, camera)))
-            args.save_path = f"{os.path.join(args.data_path, camera)}_crop"
+            os.makedirs(args.save_path, exist_ok=True)
             save_data(data_folders, '2020-11-17-1', '2020-11-19-0')
             save_data(data_folders, '2020-11-23-0', '2020-11-24-0')
