@@ -18,6 +18,7 @@ class Trainer:
         self.epochs = args.epochs
         self.pretrain = args.pretrain
         self.model = resnet34()
+        self.dataset = args.dataset
 
         self.optimizer = optim.SGD(
             self.model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-3
@@ -37,10 +38,10 @@ class Trainer:
                 )
 
         # set path
-        self.model_path = f'./cnn_regressor/best_model/{args.label_type}/norm_{args.norm_type}/{args.data_type}'
+        self.model_path = f'./cnn_regressor/best_model/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}'
         os.makedirs(self.model_path, exist_ok=True)
 
-    def pretrain(self):
+    def pretraining(self):
         # model
         self.model.to(self.device)
         # initial dev loss
@@ -89,7 +90,7 @@ class Trainer:
 
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             if self.pretrain:
-                labels = F.get_cls_label(labels).to(self.device)
+                labels = F.get_cls_label(labels, self.dataset).to(self.device)
 
             output, _ = self.model(inputs)
             loss = criterion(torch.squeeze(output), labels)
@@ -109,7 +110,7 @@ class Trainer:
             self.model.eval()
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             if self.pretrain:
-                labels = F.get_cls_label(labels).to(self.device)
+                labels = F.get_cls_label(labels, self.dataset).to(self.device)
 
             with torch.no_grad():
                 # Cross Entropy loss
@@ -183,7 +184,7 @@ if __name__ == '__main__':
     # Set random seed for reproducibility
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--csv_path", type=str, default='./preprocessing/brave_data_label.csv',
+        "--dataset", type=str, default='weather',
         help="csv file path"
     )
     parser.add_argument(
@@ -220,6 +221,7 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
+    args.csv_path = f'./preprocessing/{args.dataset}_data_label.csv'
     args.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     args.data_type = 'iid' if args.iid else 'time'
     if args.label_type == 0:
@@ -246,7 +248,7 @@ if __name__ == '__main__':
     else:
         if args.pretrain:
             print("Pretrain with classification task is started")
-            trainer.pretrain()
+            trainer.pretraining()
         else:
             print("Training CNN Regressor is started")
         trainer.regression()
