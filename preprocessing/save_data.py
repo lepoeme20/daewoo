@@ -35,7 +35,7 @@ def preprocessing(img_name, data_path, folder, save_path):
         img_gray = img.astype(np.float32)
 
         # ROI cropping (448 448)
-        img = img_gray[img_gray.shape[0]-896:, img_gray.shape[1]-896:]
+        img = img_gray[img_gray.shape[0]-448:, img_gray.shape[1]-448:]
         # Resizing
         img = cv2.resize(img, dsize=(224, 224))
 
@@ -102,11 +102,12 @@ if __name__=='__main__':
 
     elif args.dataset == 'weather':
         data_folders = sorted(os.listdir(args.data_path))
-        save_data(data_folders, '2020-11-08', '2020-11-17')
+        save_data(data_folders, '2020-11-08', '2020-11-11')
+        save_data(data_folders, '2020-11-13', '2020-11-18')
 
     elif args.dataset == 'kmou':
         for camera in ("PORT", "STBD"):
             data_folders = sorted(os.listdir(os.path.join(args.data_path, camera)))
             args.save_path = f"{os.path.join(args.data_path, camera)}_crop"
-            save_data(data_folders, '2020-11-17', '2020-11-17')
-            save_data(data_folders, '2020-11-22', '2020-11-24')
+            save_data(data_folders, '2020-11-17-1', '2020-11-19-0')
+            save_data(data_folders, '2020-11-23-0', '2020-11-24-0')
