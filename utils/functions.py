@@ -105,10 +105,15 @@ def build_input(args, inputs):
 def _gap(inputs):
     return nn.AdaptiveAvgPool2d((1, 1))(inputs)
 
-def get_cls_label(labels):
-    labels[labels < 1.17] = 0
-    labels[labels >= 1.17] = 1
-    labels[labels >= 1.3] = 2
-    labels[labels >= 2.0] = 3
+def get_cls_label(labels, dataset):
+    q1, q2, q3 = None, None, None
+    if dataset == 'brave':
+        q1, q2, q3 = 1.17, 1.3, 2.0
+    elif dataset == 'weather':
+        q1, q2, q3 = 0.591, 0.713, 0.920
+    labels[labels < q1] = 0
+    labels[labels >= q1] = 1
+    labels[labels >= q2] = 2
+    labels[labels >= q3] = 3
 
     return labels.type(torch.LongTensor)
