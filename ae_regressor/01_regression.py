@@ -1,12 +1,10 @@
 import os
 import sys
-import time
 import torch
 # Regressor
 import lightgbm as lgb
 from sklearn.metrics import mean_absolute_error
 import pickle
-# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
@@ -50,33 +48,7 @@ def main():
     print(f"** Training progress with {args.data_type} condition **")
 
     if args.test:
-        # #reg_type = 'svr'
 
-        # total_labels = []
-        # total_plabels = []
-
-        # for idx, (inputs, labels) in enumerate((tst_loader)):
-        #     # step progress #
-        #     inputs = get_torch_vars(inputs)
-        #     encoded, _ = AE(inputs)
-
-        #     regressor = Regressor(encoded, labels, train=False, reg_type='svr', iid_type = 'time')
-        #     predict_label = regressor(encoded, labels, train=False, reg_type='svr', iid_type = 'time')
-
-        #     labels = labels.numpy()
-        #     total_labels.extend(labels)
-        #     total_plabels.extend(predict_label)
-        #     print(predict_label)
-
-        # x = [i for i in range(len(total_labels))]
-
-        # plt.plot(x, total_labels)
-        # plt.plot(x, total_plabels)
-        # plt.legend(['Actual Label','Predicted Label'])
-        # plt.title('Data Type: {}, Regressor: {}'.format(regressor.iid_type, regressor.reg_type))
-        # plt.savefig('{}_{}.png'.format(regressor.iid_type, regressor.reg_type))
-        # plt.show()
-        # exit(0)
         load_path = os.path.join(model_path, 'lightgbm.pkl')
         with open(load_path, 'rb') as f:
             best_model = pickle.load(f)
