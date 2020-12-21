@@ -1,5 +1,6 @@
 import os
 import argparse
+import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from tqdm import tqdm
@@ -14,9 +15,6 @@ def get_args():
     )
     parser.add_argument(
         '--data-path', type=str, help='original data path'
-    )
-    parser.add_argument(
-        '--save-path', type=str, help='data save path'
     )
     parser.add_argument(
         '--num-worker', type=int, default=4, help='# of workers for Pool'
@@ -46,6 +44,7 @@ def cal_time(time):
     return start, end
 
 def set_phase(row, trn_idx, dev_idx, tst_idx):
+    phase = None
     if row['label_idx'] in trn_idx:
         phase = 'train'
     elif row['label_idx'] in dev_idx:
@@ -155,8 +154,8 @@ if __name__=='__main__':
                 # time = datetime.strftime(radar_df.index[0], "%Y%m%d%H%M%S")
                 time = radar_df.index[idx]
                 height = float(radar_df['Hm0'].iloc[idx])
-                direction = float(radar_df['Tm02'].iloc[idx])
-                period = float(radar_df['Dp1'].iloc[idx])
+                period = float(radar_df['Tm02'].iloc[idx])
+                direction = float(radar_df['Dp1-t'].iloc[idx])
 
                 # set time
                 # local time = UTC time + 9 hours
