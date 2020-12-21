@@ -119,9 +119,9 @@ if __name__=='__main__':
             total_idx.extend(idx_list)
 
     elif args.dataset == 'weather':
-        radar_path = '/media/lepoeme20/Data/projects/daewoo/weather/wavex_11.csv'
+        # radar_path = '/media/lepoeme20/Data/projects/daewoo/weather/wavex_11.csv'
         # set data_path
-        data_path = '/media/lepoeme20/Data/projects/daewoo/weather/data'
+        # data_path = '/media/lepoeme20/Data/projects/daewoo/weather/data'
 
         radar_df = pd.read_csv(args.radar_path, index_col=None)
         # get code name
@@ -160,9 +160,12 @@ if __name__=='__main__':
 
                 # set time
                 # local time = UTC time + 9 hours
-                aligned_time = time + timedelta(hours=9)
-                start = datetime.strftime((aligned_time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                end = datetime.strftime((aligned_time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                # 기상 1호는 할 필요 없음 
+                # aligned_time = time + timedelta(hours=9)
+                # start = datetime.strftime((aligned_time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                # end = datetime.strftime((aligned_time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                start = datetime.strftime((time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                end = datetime.strftime((time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
                 imgs = list(filter(lambda x: start <= x[:-6] <= end, all_imgs))
 
                 # save images
