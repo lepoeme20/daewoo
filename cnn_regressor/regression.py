@@ -63,7 +63,8 @@ class Trainer:
         best_loss = 1000.
         # model path
         pretrained_path = os.path.join(self.model_path, 'pretrained_model.pt')
-        regressor_path = os.path.join(self.model_path, 'regressor.pt')
+        # regressor_path = os.path.join(self.model_path, 'regressor.pt')
+        regressor_path = os.path.join(self.model_path, 'regressor_residual.pt')
 
         # criterion
         criterion = nn.MSELoss()
@@ -109,6 +110,7 @@ class Trainer:
         for idx, (inputs, labels) in enumerate(self.dev_loader, 0):
             self.model.eval()
             inputs, labels = inputs.to(self.device), labels.to(self.device)
+            labels -= 0.9669
             if self.pretrain:
                 labels = F.get_cls_label(labels, self.dataset).to(self.device)
 
@@ -127,7 +129,7 @@ class Trainer:
         self.scheduler.step(dev_loss)
 
         if dev_loss < best_loss:
-            # print("Loss: {:.4f}".format(dev_loss))
+            print("Loss: {:.4f}".format(dev_loss))
             best_loss = dev_loss
             torch.save({
                 'model_state_dict': self.model.state_dict(),
@@ -160,6 +162,7 @@ class Trainer:
                 total=len(self.tst_loader),
             ):
                 img, label = map(lambda x: x.to(self.device), batch)
+                label -= 0.9669
 
                 output, _ = self.model(img)
                 maeloss = self.MAE(output.squeeze(), label)
@@ -172,6 +175,35 @@ class Trainer:
         loss_mape /= step + 1
 
         return loss_mae, loss_mape
+
+    def baseline(self):
+        with torch.no_grad():
+            trn_mean = torch.zeros((len(self.trn_loader), 1), device=self.device)
+            for idx, (_, label) in tqdm(
+                enumerate(self.trn_loader),
+                desc="compute train mean",
+                total=len(self.trn_loader),
+            ):
+                batch_height = label.to(self.device)
+                trn_mean[idx] = torch.mean(batch_height).item()
+
+            trn_mean = torch.mean(trn_mean)
+            mae = 0.0
+            mape = 0.0
+            for step, (_, label) in tqdm(
+                enumerate(self.tst_loader),
+                desc="test step",
+                total=len(self.tst_loader)
+            ):
+                y_tst = label.to(self.device)
+                mean_value = torch.full_like(y_tst, trn_mean)
+                mae += self.MAE(mean_value, y_tst).item()
+                mape += self.MAPE(mean_value, y_tst).item()
+
+            mae /= step + 1
+            mape /= step + 1
+
+        return mae, mape
 
     def MAE(self, pred, true):
         return torch.mean((pred - true).abs())
@@ -219,6 +251,9 @@ if __name__ == '__main__':
     parser.add_argument(
         "--pretrain", action="store_true", default=False, help="Train pretrained model"
     )
+    parser.add_argument(
+        "--baseline", action="store_true", default=False, help="Train pretrained model"
+    )
     args = parser.parse_args()
 
     args.csv_path = f'./preprocessing/{args.dataset}_data_label.csv'
@@ -241,6 +276,10 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(SEED)
 
     trainer = Trainer(args)
+    if args.baseline:
+        mae, mape = trainer.baseline()
+        print(f"MAE: {mae}")
+        print(f"MAPE: {mape}")
     if args.test:
         mae, mape = trainer.inference()
         print(f"MAE: {mae}")
