@@ -9,31 +9,16 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-classes = {"PORT": 0, "STBD": 1}
-
 
 class WaveDataset(Dataset):
     def __init__(
         self,
-        root: str,
+        data: list,
         img_size: int = 32,
     ):
         super(WaveDataset, self).__init__()
-        self.root = root
-        self.pth_port = os.path.join(self.root, "PORT/day_time")
-        self.pth_stbd = os.path.join(self.root, "STBD/day_time")
+        self.data = data
         self.img_size = img_size
-
-        # aggregate all data
-        img_port, img_stbd = [], []
-        for folder in os.listdir(self.pth_port):
-            for img in glob.glob(os.path.join(self.pth_port, folder, "*.jpg")):
-                img_port.append({"img": img, "label": classes["PORT"]})  # label 0
-        for folder in os.listdir(self.pth_stbd):
-            for img in glob.glob(os.path.join(self.pth_stbd, folder, "*.jpg")):
-                img_stbd.append({"img": img, "label": classes["STBD"]})  # label 1
-        self.data = img_port + img_stbd
-        random.shuffle(self.data)  # TODO: train/val/test 구분되어 있으면 지울 것
 
     def get_transform(self, frame):
         """ per-image normalization """
@@ -68,6 +53,38 @@ class WaveDataset(Dataset):
         return self.get_transform(frame), label
 
 
-def get_dataloader(root: str, batch_size: int, shuffle: bool):
-    dset = WaveDataset(root)
-    return DataLoader(dset, batch_size=batch_size, shuffle=True)
+def get_dataloaders(root: str, train_batch_size: int, eval_batch_size: int):
+    classes = {"PORT": 0, "STBD": 1}
+
+    pth_port = os.path.join(root, "PORT/day_time")
+    pth_stbd = os.path.join(root, "STBD/day_time")
+
+    # aggregate all data
+    img_port, img_stbd = [], []
+    for folder in os.listdir(pth_port):
+        for img in glob.glob(os.path.join(pth_port, folder, "*.jpg")):
+            img_port.append({"img": img, "label": classes["PORT"]})  # label 0
+    for folder in os.listdir(pth_stbd):
+        for img in glob.glob(os.path.join(pth_stbd, folder, "*.jpg")):
+            img_stbd.append({"img": img, "label": classes["STBD"]})  # label 1
+
+    img_stbd = random.sample(img_stbd, 10000)  # sampling 10000 at STBD for balance
+    data = img_port + img_stbd
+    random.shuffle(data)
+
+    train_data_size = int(len(data) * 0.7)
+    val_data_size = (len(data) - train_data_size) // 2
+
+    train_data = data[:train_data_size]
+    val_data = data[train_data_size : train_data_size + val_data_size]
+    test_data = data[train_data_size + val_data_size :]
+
+    train_dset = WaveDataset(train_data)
+    val_dset = WaveDataset(val_data)
+    test_dset = WaveDataset(test_data)
+
+    return (
+        DataLoader(train_dset, batch_size=train_batch_size, shuffle=True),
+        DataLoader(val_dset, batch_size=eval_batch_size, shuffle=False),
+        DataLoader(test_dset, batch_size=eval_batch_size, shuffle=False),
+    )

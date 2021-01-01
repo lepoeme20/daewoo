@@ -8,7 +8,7 @@ def load_config():
     parser.add_argument("--root", type=str, default="/hdd/data/daewoo/kmou")
     parser.add_argument("--ckpt_path", type=str, default="./checkpoint")
     parser.add_argument("--seed", type=int, default=22)
-    parser.add_argument("--mode", type=str, choices=['train', 'test'],default="train")
+    parser.add_argument("--mode", type=str, choices=["train", "test"], default="train")
 
     parser.add_argument("--epoch", type=int, default=50)
     parser.add_argument("--lr", type=int, default=0.001)

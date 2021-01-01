@@ -14,7 +14,7 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from dataset import get_dataloader
+from dataset import get_dataloaders
 from utils import EarlyStopping
 
 
@@ -41,8 +41,8 @@ class Trainer:
         )
         self.train_batch_size = config["train_batch_size"]
         self.eval_batch_size = config["eval_batch_size"]
-        self.train_loader = get_dataloader(
-            self.root, self.train_batch_size, shuffle=True
+        self.train_loader, self.val_loader, self.test_loader = get_dataloaders(
+            self.root, self.train_batch_size, self.eval_batch_size
         )
         ## TODO: val, test loader
 

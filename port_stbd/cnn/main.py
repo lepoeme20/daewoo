@@ -9,17 +9,17 @@ import torch
 import torch.nn as nn
 
 from config import load_config
-from resnet import ResNet34
+from resnet import ResNet18
 from trainer import Trainer
 from utils import fix_seed
 
 
 def main(args):
     fix_seed(args.seed)
-    model = ResNet34(num_classes=args.num_classes, pretrained=False)
+    model = ResNet18(num_classes=args.num_classes, pretrained=args.pretrain)
     trainer = Trainer(config=vars(args), model=model)
 
-    if args.mode == 'train':
+    if args.mode == "train":
         t = time.time()
         trainer.train()
         train_time = time.time() - t
@@ -30,7 +30,7 @@ def main(args):
         print("** Total Time: {}-hour {}-minute".format(int(h), int(m)))
 
     else:
-        test_model = resnet50()
+        test_model = ResNet18(num_classes=args.num_classes, pretrained=args.pretrain)
         state_dict = torch.load(glob.glob(os.path.join(args.ckpt_path, "*.pt"))[0])
 
         new_state_dict = OrderedDict()
