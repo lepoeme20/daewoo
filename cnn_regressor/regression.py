@@ -6,7 +6,6 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision.models.densenet import _load_state_dict
 from resnet import resnet34
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
@@ -110,7 +109,6 @@ class Trainer:
         for idx, (inputs, labels) in enumerate(self.dev_loader, 0):
             self.model.eval()
             inputs, labels = inputs.to(self.device), labels.to(self.device)
-            labels -= 0.9669
             if self.pretrain:
                 labels = F.get_cls_label(labels, self.dataset).to(self.device)
 
@@ -162,7 +160,6 @@ class Trainer:
                 total=len(self.tst_loader),
             ):
                 img, label = map(lambda x: x.to(self.device), batch)
-                label -= 0.9669
 
                 output, _ = self.model(img)
                 maeloss = self.MAE(output.squeeze(), label)
