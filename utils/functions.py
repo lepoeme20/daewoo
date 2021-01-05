@@ -117,3 +117,10 @@ def get_cls_label(labels, dataset):
     labels[labels >= q3] = 3
 
     return labels.type(torch.LongTensor)
+
+def pred2height(pred, dataset):
+    # weather
+    # gap: 0.1316, min: 0.304
+    if dataset == 'weather':
+        height = np.array([0.304, 0.4356, 0.5672, 0.6988, 0.8304, 0.962, 1.0936, 1.2252, 1.3568, 1.4884])
+        return torch.tensor(height[pred], dtype=torch.float, device=pred.device)

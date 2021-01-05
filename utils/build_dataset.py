@@ -5,6 +5,7 @@ from torchvision import transforms
 import cv2
 import numpy as np
 from PIL import Image
+from torchvision.transforms.transforms import RandomHorizontalFlip
 
 class BuildDataset(Dataset):
     def __init__(self, df, transform, img_size, label_type):
@@ -13,8 +14,12 @@ class BuildDataset(Dataset):
             self.labels = df['height'].values
         elif label_type == 'direction':
             self.labels = df['direction'].values
-        else:
+        elif label_type == 'period':
             self.labels = df['period'].values
+        elif label_type == 'cls':
+            self.height = df['height'].values
+            self.labels = df['label'].values
+
         self.transform = transform
         self.img_size = img_size
         self.label_type = label_type
@@ -26,16 +31,22 @@ class BuildDataset(Dataset):
         frame = cv2.imread(self.img_path[idx])
         if len(frame.shape) == 3:
             frame = frame[:, :, 0]
-        if self.label_type == 'direction':
-            label = torch.tensor(self.labels[idx] // 3, dtype=torch.long)
+        if self.label_type == 'cls':
+            label = torch.tensor(self.labels[idx], dtype=torch.long)
+            height = torch.tensor(self.height[idx], dtype=torch.float)
+            return self.get_transform(frame), label, height
         else:
-            label = torch.tensor(self.labels[idx], dtype=torch.float)
-        return self.get_transform(frame), label
+            if self.label_type == 'direction':
+                label = torch.tensor(self.labels[idx] // 3, dtype=torch.long)
+            else:
+                label = torch.tensor(self.labels[idx], dtype=torch.float)
+            return self.get_transform(frame), label
 
     def get_transform(self, frame):
         if self.transform == 0:
             transform = transforms.Compose([
                 transforms.ToPILImage(),
+                transforms.RandomHorizontalFlip(0.5),
                 transforms.Resize((self.img_size, self.img_size)),
                 transforms.ToTensor(),
             ])
@@ -43,6 +54,7 @@ class BuildDataset(Dataset):
         elif self.transform == 1:
             transform = transforms.Compose([
                 transforms.ToPILImage(),
+                transforms.RandomHorizontalFlip(0.5),
                 transforms.Resize((self.img_size, self.img_size)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.3352], std=[0.0647]),
@@ -65,4 +77,7 @@ class BuildDataset(Dataset):
                 interpolation=cv2.INTER_AREA
                 )
 
-            return transforms.ToTensor()(frame)
+            frame = transforms.ToPILImage()(frame)
+            frame = transforms.RandomHorizontalFlip()(frame)
+
+            return transforms.ToTensor()(np.array(frame))

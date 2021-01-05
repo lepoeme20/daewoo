@@ -1,7 +1,6 @@
 import torch
 from utils.build_dataset import BuildDataset
 import pandas as pd
-import numpy as np
 
 def get_dataloader(csv_path, batch_size, label_type, iid=False, transform=2, img_size=224):
     df = pd.read_csv(csv_path)
