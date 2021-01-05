@@ -226,3 +226,4 @@ _4kickoff.py
 unseen_data
 pretrained
 label_eda.py
+*.png
