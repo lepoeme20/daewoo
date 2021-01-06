@@ -13,6 +13,7 @@ from tqdm import tqdm
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
 import utils.functions as pred2height
+from model_utils import softXEnt
 
 MODELS = {
     "ResNet18": torchvision.models.resnet18,
@@ -53,7 +54,7 @@ class Trainer:
             self.optimizer, mode="min", factor=0.1, patience=10
         )
         self.loss = args.loss
-
+        self.num_classes = args.num_classes
         # data loader
         self.trn_loader, self.dev_loader, self.tst_loader = get_dataloader(
             csv_path=args.csv_path,
@@ -76,9 +77,12 @@ class Trainer:
         # model path
         model_path = os.path.join(self.model_path, f"{args.model_name}.pt")
         # criterion
-        criterion = (
-            nn.CrossEntropyLoss() if self.loss == "ce" else None
-        )  ######## TODO: replace None to custom soft loss
+        
+        if self.loss == 'ce' :
+            criterion = nn.CrossEntropyLoss()
+        elif self.loss == 'soft_ce':
+            criterion = softXEnt
+            
         outer = tqdm(total=args.epochs, desc="Epoch", position=0, leave=False)
         for epoch in range(self.epochs):
             self._train_loop(epoch, criterion)
@@ -97,12 +101,20 @@ class Trainer:
             inputs = inputs.repeat(1, 3, 1, 1)
 
             output = self.model(inputs)
+            
+            if self.loss == 'ce' :
+                loss = criterion(torch.squeeze(output), labels)
+            elif self.loss == 'soft_ce' :
+                loss = criterion(torch.squeeze(output),labels,self.num_classes,window_size=2)
+            
+            '''    
             loss = (
                 criterion(torch.squeeze(output), labels)
                 if args.model_name != "GoogLenet"
                 else criterion(torch.squeeze(output[0]), labels)
             )  # googlenet has 3 outputs with aux-target in training step
-
+            '''
+            
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -126,7 +138,11 @@ class Trainer:
             with torch.no_grad():
                 # Cross Entropy loss
                 logit = self.model(inputs)
-                loss = criterion(torch.squeeze(logit), labels)
+                
+                if self.loss == 'ce' :
+                    loss = criterion(torch.squeeze(logit), labels)
+                elif self.loss == 'soft_ce' :
+                    loss = criterion(torch.squeeze(logit),labels,self.num_classes,window_size=2)
 
                 # Loss
                 _dev_loss += loss
@@ -281,7 +297,7 @@ if __name__ == "__main__":
         help="classifier after feature extraction (linear, gap)",
         choices=["linear", "gap"],
     )
-    parser.add_argument("--loss", type=str, default="ce", choices=["ce", "soft"])
+    parser.add_argument("--loss", type=str, default="ce", choices=["ce", "soft_ce"])
     parser.add_argument("--num_classes", type=int, help="number of classes", default=10)
     args = parser.parse_args()
 
