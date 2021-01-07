@@ -356,6 +356,7 @@ if __name__ == "__main__":
     elif args.label_range == 1:
         print("Use 10cm range")
     elif args.label_range == 2:
+        args.num_classes = 20
         print("Use 20cm range")
 
     print("Modifying img path in csv file...")
