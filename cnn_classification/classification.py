@@ -69,7 +69,7 @@ class Trainer:
         )
 
         # set path
-        self.model_path = f"./cnn_classification/best_model/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}"
+        self.model_path = f"./cnn_classification/best_model/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}_{args.label_range}"
         os.makedirs(self.model_path, exist_ok=True)
 
     def classification(self):
