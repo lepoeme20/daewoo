@@ -358,9 +358,9 @@ if __name__ == "__main__":
     if args.label_range == 0:
         print("Use min-median-max range")
     elif args.label_range == 1:
+        args.num_classes = 20
         print("Use 10cm range")
     elif args.label_range == 2:
-        args.num_classes = 20
         print("Use 20cm range")
 
     print("Modifying img path in csv file...")
