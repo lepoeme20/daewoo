@@ -19,12 +19,13 @@ class BuildDataset(Dataset):
             self.labels = df['period'].values
         elif label_type == 'cls':
             if cls_range != 0:
-                df = class_label().generate_class(df, 'label', cls_range*10)
+                n_cls = 10 if cls_range == 2 else 20 # 10cm range means 20 classes
+                df = class_label().generate_class(df, 'label', n_cls)
             self.height = df['height'].values
             self.labels = (
                 df["label"].values
                 if cls_range == 0
-                else df[f"class_label_{cls_range*10}"].values
+                else df[f"class_label_{n_cls}"].values
             )
 
         self.transform = transform
