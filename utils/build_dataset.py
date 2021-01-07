@@ -9,7 +9,7 @@ from torchvision.transforms.transforms import RandomHorizontalFlip
 from cnn_classification.get_class import class_label
 
 class BuildDataset(Dataset):
-    def __init__(self, df, transform, img_size, label_type):
+    def __init__(self, df, transform, img_size, label_type, cls_range=1):
         self.img_path = df['image'].values
         if label_type == 'height':
             self.labels = df['height'].values
@@ -18,10 +18,14 @@ class BuildDataset(Dataset):
         elif label_type == 'period':
             self.labels = df['period'].values
         elif label_type == 'cls':
-            df = class_label.generate_class(df, 'label', unit)
+            if cls_range != 0:
+                df = class_label().generate_class(df, 'label', cls_range*10)
             self.height = df['height'].values
-            #self.labels = df['label'].values
-            self.labels = df['class_label'].values
+            self.labels = (
+                df["label"].values
+                if cls_range == 0
+                else df[f"class_label_{cls_range*10}"].values
+            )
 
         self.transform = transform
         self.img_size = img_size
