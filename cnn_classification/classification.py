@@ -72,7 +72,7 @@ class Trainer:
         self.model_path = (
             f"./cnn_classification/best_model/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}"
             if args.label_range == 0
-            else f"./cnn_classification/best_model/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}_{args.label_range}0"
+            else f"./cnn_classification/best_model/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}/{args.label_range}0"
         )
         os.makedirs(self.model_path, exist_ok=True)
 
