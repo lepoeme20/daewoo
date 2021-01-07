@@ -13,7 +13,7 @@ from tqdm import tqdm
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
 import utils.functions as pred2height
-from model_utils import softXEnt
+from cnn_classification.model_utils import softXEnt
 
 MODELS = {
     "ResNet18": torchvision.models.resnet18,
