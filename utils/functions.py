@@ -117,10 +117,36 @@ def get_cls_label(labels, dataset):
     labels[labels >= q3] = 3
 
     return labels.type(torch.LongTensor)
-
+'''
 def pred2height(pred, dataset):
     # weather
     # gap: 0.1316, min: 0.304
     if dataset == 'weather':
         height = np.array([0.304, 0.4356, 0.5672, 0.6988, 0.8304, 0.962, 1.0936, 1.2252, 1.3568, 1.4884])
         return torch.tensor(height[pred], dtype=torch.float, device=pred.device)
+'''
+
+def pred2height(pred,label_range):
+    # weather
+    # gap: 0.1316, min: 0.304
+    if label_range == 2 :
+        step = 0.2
+        matching = np.arange(0,2.0,step)
+        avg_height = {index : np.round(v+step/2,3)  for index,v in enumerate(matching)}
+    
+    elif label_range == 1 :
+        step = 0.1
+        matching = np.arange(0,2.0,step)
+    
+        avg_height = {index : np.round(v+step/2,3)  for index,v in enumerate(matching)}
+
+    elif label_range == 0 :
+        avg_height = np.array([0.304, 0.4356, 0.5672, 0.6988, 0.8304, 0.962, 1.0936, 1.2252, 1.3568, 1.4884])
+
+    else :
+        print('error')
+    
+    result = [avg_height[i.item()] for i in pred]
+    
+    return result
+
