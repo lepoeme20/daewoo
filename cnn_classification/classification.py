@@ -323,11 +323,13 @@ if __name__ == "__main__":
     parser.add_argument("--loss", type=str, default="ce", choices=["ce", "soft_ce"])
     parser.add_argument("--window", type=int, default=2, help="window size in soft ce")
     parser.add_argument("--num_classes", type=int, help="number of classes", default=10)
+
     args = parser.parse_args()
 
     args.csv_path = os.path.join(args.root_csv_path, f"{args.dataset}_data_label.csv")
     args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.data_type = "iid" if args.iid else "time"
+
     if args.label_type == 0:
         print(" Set label as height")
         args.label_type = "height"

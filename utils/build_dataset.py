@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from torchvision.transforms.transforms import RandomHorizontalFlip
+from cnn_classification.get_class import class_label
 
 class BuildDataset(Dataset):
     def __init__(self, df, transform, img_size, label_type):
@@ -17,8 +18,10 @@ class BuildDataset(Dataset):
         elif label_type == 'period':
             self.labels = df['period'].values
         elif label_type == 'cls':
+            df = class_label.generate_class(df, 'label', unit)
             self.height = df['height'].values
-            self.labels = df['label'].values
+            #self.labels = df['label'].values
+            self.labels = df['class_label'].values
 
         self.transform = transform
         self.img_size = img_size
