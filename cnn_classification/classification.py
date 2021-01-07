@@ -56,6 +56,7 @@ class Trainer:
         self.loss = args.loss
         self.window_size = args.window
         self.num_classes = args.num_classes
+
         # data loader
         self.trn_loader, self.dev_loader, self.tst_loader = get_dataloader(
             csv_path=args.csv_path,
@@ -64,6 +65,7 @@ class Trainer:
             iid=args.iid,
             transform=args.norm_type,
             img_size=args.img_size,
+            cls_range=args.label_range,
         )
 
         # set path
@@ -322,7 +324,13 @@ if __name__ == "__main__":
     )
     parser.add_argument("--loss", type=str, default="ce", choices=["ce", "soft_ce"])
     parser.add_argument("--window", type=int, default=2, help="window size in soft ce")
-    parser.add_argument("--num_classes", type=int, help="number of classes", default=10)
+    parser.add_argument("--num-classes", type=int, help="number of classes", default=10)
+    parser.add_argument(
+        "--label-range",
+        type=int,
+        choices=[0, 1, 2],
+        help="0: minmax / 1: 10cm range / 2: 20cm range",
+    )
 
     args = parser.parse_args()
 
@@ -342,6 +350,13 @@ if __name__ == "__main__":
     elif args.label_type == 3:
         print(" Set label as classification")
         args.label_type = "cls"
+
+    if args.label_range == 0:
+        print("Use min-median-max range")
+    elif args.label_range == 1:
+        print("Use 10cm range")
+    elif args.label_range == 2:
+        print("Use 20cm range")
 
     print("Modifying img path in csv file...")
     label_df = pd.read_csv(args.csv_path)

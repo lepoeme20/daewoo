@@ -34,5 +34,5 @@ class class_label:
 
         return df: whole label file with new class label (column: 'class_label')
         '''
-        df['class_label'] = df[label_column].apply(lambda x: self.func(x, unit))
+        df[f'class_label_{unit}'] = df[label_column].apply(lambda x: self.func(x, unit))
         return df
