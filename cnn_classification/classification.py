@@ -223,7 +223,7 @@ class Trainer:
 
                 output = self.model(img)
                 _, pred = torch.max(output, 1)
-                output = pred2height(pred)
+                output = pred2height(pred,self.label_range)
 
                 maeloss = self.MAE(output.squeeze(), height)
                 mapeloss = self.MAPE(output.squeeze(), height)
