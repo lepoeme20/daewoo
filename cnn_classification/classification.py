@@ -56,7 +56,7 @@ class Trainer:
         self.loss = args.loss
         self.window_size = args.window
         self.num_classes = args.num_classes
-
+        self.label_range = args.label_range
         # data loader
         self.trn_loader, self.dev_loader, self.tst_loader = get_dataloader(
             csv_path=args.csv_path,
@@ -223,7 +223,7 @@ class Trainer:
 
                 output = self.model(img)
                 _, pred = torch.max(output, 1)
-                output = pred2height(pred)
+                output = pred2height(pred, self.label_range)
 
                 maeloss = self.MAE(output.squeeze(), height)
                 mapeloss = self.MAPE(output.squeeze(), height)
