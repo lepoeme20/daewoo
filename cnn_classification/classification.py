@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from utils.build_dataloader import get_dataloader
-import utils.functions as pred2height
+from utils.functions import pred2height
 from cnn_classification.model_utils import softXEnt
 
 MODELS = {
@@ -224,6 +224,7 @@ class Trainer:
                 output = self.model(img)
                 _, pred = torch.max(output, 1)
                 output = pred2height(pred, self.label_range)
+                output = torch.tensor(output).to(self.device)
 
                 maeloss = self.MAE(output.squeeze(), height)
                 mapeloss = self.MAPE(output.squeeze(), height)
