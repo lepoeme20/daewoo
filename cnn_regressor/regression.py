@@ -1,22 +1,38 @@
+import argparse
 import os
 import sys
-import argparse
+
 import numpy as np
-from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from resnet import resnet34
+import torchvision
+from tqdm import tqdm
+
+# from resnet import resnet34
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from utils.build_dataloader import get_dataloader
 import utils.functions as F
+from utils.build_dataloader import get_dataloader
+
+MODELS = {
+    "ResNet18": torchvision.models.resnet18,
+    "DenseNet": torchvision.models.densenet121,
+    "GoogLenet": torchvision.models.googlenet,
+    "VGG": torchvision.models.vgg16,
+}
+
 
 class Trainer:
     def __init__(self, args):
         self.device = args.device
         self.epochs = args.epochs
         self.pretrain = args.pretrain
-        self.model = resnet34()
+        self.model = MODELS[args.model_name](pretrained=args.imagenet)
+        self.model = nn.Sequential(
+            self.model,
+            nn.Linear(1000, 1),
+        )
         self.dataset = args.dataset
 
         self.optimizer = optim.SGD(
@@ -34,7 +50,7 @@ class Trainer:
                 iid=args.iid,
                 transform=args.norm_type,
                 img_size=args.img_size
-                )
+        )
 
         # set path
         self.model_path = f'./cnn_regressor/best_model/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}'
@@ -69,12 +85,12 @@ class Trainer:
         criterion = nn.MSELoss()
 
         # load pretrained model
-        checkpoint = torch.load(pretrained_path)
-        if isinstance(self.model, nn.DataParallel):
-            self.model.module.load_state_dict(checkpoint['model_state_dict'])
-        else:
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.model.fc = nn.Linear(self.model.fc.in_features, 1).to(self.device)
+        # checkpoint = torch.load(pretrained_path)
+        # if isinstance(self.model, nn.DataParallel):
+        #     self.model.module.load_state_dict(checkpoint['model_state_dict'])
+        # else:
+        #     self.model.load_state_dict(checkpoint['model_state_dict'])
+        # self.model.fc = nn.Linear(self.model.fc.in_features, 1).to(self.device)
 
         for epoch in range(self.epochs):
             print("")
@@ -88,6 +104,7 @@ class Trainer:
             self.model.train()
             total_step += 1
 
+            inputs = inputs.repeat(1,3,1,1) ##
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             if self.pretrain:
                 labels = F.get_cls_label(labels, self.dataset).to(self.device)
@@ -108,6 +125,7 @@ class Trainer:
         _dev_loss, dev_loss = 0., 0.
         for idx, (inputs, labels) in enumerate(self.dev_loader, 0):
             self.model.eval()
+            inputs = inputs.repeat(1,3,1,1) ##
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             if self.pretrain:
                 labels = F.get_cls_label(labels, self.dataset).to(self.device)
@@ -160,6 +178,7 @@ class Trainer:
                 total=len(self.tst_loader),
             ):
                 img, label = map(lambda x: x.to(self.device), batch)
+                img = img.repeat(1,3,1,1) ##
 
                 output, _ = self.model(img)
                 maeloss = self.MAE(output.squeeze(), label)
@@ -224,7 +243,7 @@ if __name__ == '__main__':
         "--epochs", type=int, default=200, help="Batch size"
     )
     parser.add_argument(
-        "--batch-size", type=int, help="Batch size"
+        "--batch-size", type=int, default=32, help="Batch size"
     )
     parser.add_argument(
         "--lr", type=float, default=0.05, help="Batch size"
@@ -251,6 +270,16 @@ if __name__ == '__main__':
     parser.add_argument(
         "--baseline", action="store_true", default=False, help="Train pretrained model"
     )
+    parser.add_argument(
+        "--imagenet", action="store_true", default=False, help="ImageNet pretrained"
+    )
+    parser.add_argument(
+        "--model-name",
+        type=str,
+        help="Model name (ResNet18, DenseNet, GoogLenet, VGG)",
+        choices=["ResNet18", "DenseNet", "GoogLenet", "VGG"],
+    )
+    parser.add_argument("--num-classes", type=int, default=1)
     args = parser.parse_args()
 
     args.csv_path = f'./preprocessing/{args.dataset}_data_label.csv'
