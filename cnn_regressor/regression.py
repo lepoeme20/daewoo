@@ -109,7 +109,8 @@ class Trainer:
             if self.pretrain:
                 labels = F.get_cls_label(labels, self.dataset).to(self.device)
 
-            output, _ = self.model(inputs)
+            # output, _ = self.model(inputs)
+            output = self.model(inputs)
             loss = criterion(torch.squeeze(output), labels)
 
             self.optimizer.zero_grad()
@@ -132,7 +133,8 @@ class Trainer:
 
             with torch.no_grad():
                 # Cross Entropy loss
-                logit, _ = self.model(inputs)
+                # logit, _ = self.model(inputs)
+                logit = self.model(inputs)
                 loss = criterion(torch.squeeze(logit), labels)
 
                 # Loss
@@ -178,9 +180,10 @@ class Trainer:
                 total=len(self.tst_loader),
             ):
                 img, label = map(lambda x: x.to(self.device), batch)
-                img = img.repeat(1,3,1,1) ##
+                img = img.repeat(1,3,1,1)
 
-                output, _ = self.model(img)
+                # output, _ = self.model(img)
+                output = self.model(img)
                 maeloss = self.MAE(output.squeeze(), label)
                 mapeloss = self.MAPE(output.squeeze(), label)
 
