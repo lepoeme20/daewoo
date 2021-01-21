@@ -24,7 +24,7 @@ def get_args():
         '--num-worker', type=int, default=4, help='# of workers for Pool'
     )
     params, _ = parser.parse_known_args()
-    params.save_path = f"{params.data_path}_crop"
+    params.save_path = os.path.join(params.data_path, "crop_data")
     return params
 
 
@@ -34,17 +34,29 @@ def preprocessing(img_name, data_path, folder, save_path):
         img = cv2.imread(os.path.join(data_path, folder, img_name), cv2.IMREAD_GRAYSCALE)
         img_gray = img.astype(np.float32)
 
-        # ROI cropping (448 448)
-        img = img_gray[img_gray.shape[0]-448:, img_gray.shape[1]-448:]
-        # Resizing
-        img = cv2.resize(img, dsize=(224, 224))
+        # ROI cropping (1344 448)
+        if 'weather_old' in data_path:
+            img = img_gray[246:694, 149:1493]
+        else:
+            # 1920 * 1080
+            y_total, x_total = img_gray.shape
+            w = 1344
+            h = 448
+            x = int(x_total/2 - w/2)
+            y = int(y_total/2 - h/2)
+            img = img_gray[y:y+h, x:x+w]
 
+        # Resizing
+        # img = cv2.resize(img, dsize=(224, 224))
+
+        # cv2.rectangle(img,(x, y),(x+w, y+h), (0,255,0), 2)
         cv2.imwrite(os.path.join(save_path, folder, img_name), img)
     except AttributeError:
         pass
 
 def save_data(data_folders, start, end):
     progress = tqdm(total=len(data_folders), desc="Progress", position=0, leave=False)
+
     for folder in data_folders:
         if start <= folder and folder <= end:
             daytime_imgs = []
@@ -100,14 +112,21 @@ if __name__=='__main__':
             print("{}/{} \t Folder: {} | Total Image: {:,} | RM Image: {:,} | Usable Image: {:,}".format(
                 i, len(folders), folder, len(imgs)+len(rm_imgs), len(rm_imgs), len(imgs)))
 
-    elif args.dataset == 'weather':
+    elif args.dataset == 'weather_new':
         data_folders = sorted(os.listdir(args.data_path))
+        save_data(data_folders, '2020-11-05', '2020-11-07')
         save_data(data_folders, '2020-11-08', '2020-11-11')
-        save_data(data_folders, '2020-11-13', '2020-11-18')
+        save_data(data_folders, '2020-11-17', '2020-11-17')
+
+    elif args.dataset == 'weather_old':
+        data_folders = sorted(os.listdir(args.data_path))
+        save_data(data_folders, '2018-11-06', '2018-11-13')
 
     elif args.dataset == 'kmou':
         for camera in ("PORT", "STBD"):
-            data_folders = sorted(os.listdir(os.path.join(args.data_path, camera)))
+            args.data_path = os.path.join(args.data_path, camera)
+            data_folders = sorted(os.listdir(args.data_path))
+            args.save_path = os.path.join(args.data_path, "crop_data")
             os.makedirs(args.save_path, exist_ok=True)
-            save_data(data_folders, '2020-11-17-1', '2020-11-19-0')
+            save_data(data_folders, '2020-11-18-1', '2020-11-19-0')
             save_data(data_folders, '2020-11-23-0', '2020-11-24-0')
