@@ -79,11 +79,11 @@ class BuildDataset(Dataset):
             frame /= std
 
             # Resize, 확대시 cv2.INTER_CUBIC
-            frame = cv2.resize(
-                frame,
-                dsize=(self.img_size, self.img_size),
-                interpolation=cv2.INTER_AREA
-                )
+            # frame = cv2.resize(
+            #     frame,
+            #     dsize=(self.img_size, self.img_size),
+            #     interpolation=cv2.INTER_AREA
+            #     )
 
             frame = transforms.ToPILImage()(frame)
             frame = transforms.RandomHorizontalFlip()(frame)
