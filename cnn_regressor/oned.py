@@ -24,8 +24,8 @@ class CNN(nn.Module):
             [nn.Conv2d(1, kernel_num, (448, k)) for k in kernel_size]
         )
         self.dropout = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(len(kernel_size) * kernel_num * 2, 128)
-        self.fc2 = nn.Linear(128, 1)
+        self.fc1 = nn.Linear(len(kernel_size) * kernel_num, 1)
+        # self.fc2 = nn.Linear(128, 1)
 
     def forward(self, x):
         # set dim: (batch_size, max_seq_len, embedding_size) -> (batch_size, 1, max_seq_len, embedding_size)
@@ -40,10 +40,10 @@ class CNN(nn.Module):
         v = [nn.functional.max_pool1d(i, i.size(2)).squeeze(2) for i in v]
         v = torch.cat(v, 1)
 
-        x = torch.cat((h, v), 1)
-        x = self.dropout(x)
+        # x = torch.cat((h, v), 1)
+        x = self.dropout(h)
         x = self.fc1(x)
-        x = self.fc2(x)
+        # x = self.fc2(x)
 
         return x
 
@@ -248,13 +248,13 @@ if __name__ == "__main__":
     )
     parser.add_argument("--epochs", type=int, default=200, help="Batch size")
     parser.add_argument("--batch-size", type=int, help="Batch size")
-    parser.add_argument("--lr", type=float, default=0.001, help="Batch size")
+    parser.add_argument("--lr", type=float, default=0.00005, help="Batch size")
     parser.add_argument("--img-size", type=int, default=224, help="Batch size")
     parser.add_argument("--seed", type=int, default=22, help="seed number")
     parser.add_argument(
         "--label-type",
         type=int,
-        default=3,
+        default=0,
         help="0: Height, 1: Direction, 2: Period, 3: Classification label",
     )
     parser.add_argument(
@@ -307,7 +307,7 @@ if __name__ == "__main__":
     print("Modifying img path in csv file...")
     label_df = pd.read_csv(args.csv_path)
     col_img_pth = label_df["image"]
-    folder_idx = col_img_pth[0].find("data_crop")  # 'data_crop' is shared folder name
+    folder_idx = col_img_pth[0].find("use_data")  # 'data_crop' is shared folder name
     pth_before = col_img_pth[0][:folder_idx]
     assert args.root_img_path[-1] == "/", "이미지 경로 마지막을 / 으로 끝나게 해 주세요~!"
     label_df["image"] = label_df["image"].str.replace(pth_before, args.root_img_path)
