@@ -52,11 +52,11 @@ class Trainer:
     def __init__(self, args):
         self.device = args.device
         self.epochs = args.epochs
-        self.model = CNN(100, [20, 30, 40])
+        self.model = CNN(100, [3, 4, 5])
 
         self.dataset = args.dataset
-        self.optimizer = optim.SGD(
-            self.model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-3
+        self.optimizer = optim.Adam(
+            self.model.parameters(), lr=args.lr#, momentum=0.9, weight_decay=1e-3
         )
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.1, patience=10
@@ -109,6 +109,7 @@ class Trainer:
 
             self.optimizer.zero_grad()
             loss.backward()
+            nn.utils.clip_grad_norm_(self.model.parameters(), 1.)
             self.optimizer.step()
 
             #################### Logging ###################
@@ -143,7 +144,7 @@ class Trainer:
         self.scheduler.step(dev_loss)
 
         if dev_loss < best_loss:
-            best_epoch_log.set_description_str(f"Loss: {dev_loss:.4f}")
+            best_epoch_log.set_description_str(f"The best model is saved, Loss: {dev_loss:.4f}")
             best_loss = dev_loss
             torch.save(
                 {
