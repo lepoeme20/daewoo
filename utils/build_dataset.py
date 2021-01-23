@@ -39,16 +39,11 @@ class BuildDataset(Dataset):
         frame = cv2.imread(self.img_path[idx])
         if len(frame.shape) == 3:
             frame = frame[:, :, 0]
-        if self.label_type == 'cls':
-            label = torch.tensor(self.labels[idx], dtype=torch.long)
-            height = torch.tensor(self.height[idx], dtype=torch.float)
-            return self.get_transform(frame), label, height
+        if self.label_type == 'direction':
+            label = torch.tensor(self.labels[idx] // 3, dtype=torch.long)
         else:
-            if self.label_type == 'direction':
-                label = torch.tensor(self.labels[idx] // 3, dtype=torch.long)
-            else:
-                label = torch.tensor(self.labels[idx], dtype=torch.float)
-            return self.get_transform(frame), label
+            label = torch.tensor(self.labels[idx], dtype=torch.float)
+        return self.get_transform(frame), label
 
     def get_transform(self, frame):
         if self.transform == 0:
@@ -73,7 +68,8 @@ class BuildDataset(Dataset):
             frame = frame.astype(np.float32)
             mean = frame.mean()
             std = frame.std()
-
+            if std == 0:
+                std = 1
             # normalize 진행
             frame -= mean
             frame /= std
