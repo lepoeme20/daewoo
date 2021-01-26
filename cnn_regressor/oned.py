@@ -18,29 +18,20 @@ class CNN(nn.Module):
     def __init__(self, kernel_num, kernel_size):
         super().__init__()
         self.conv_h = nn.ModuleList(
-            [nn.Conv2d(1, kernel_num, (k, 1344)) for k in kernel_size]
-        )
-        self.conv_v = nn.ModuleList(
-            [nn.Conv2d(1, kernel_num, (448, k)) for k in kernel_size]
+            [nn.Conv2d(1, kernel_num, (k, 1344), stride=5) for k in kernel_size]
         )
         self.dropout = nn.Dropout(0.5)
         self.fc1 = nn.Linear(len(kernel_size) * kernel_num, 1)
-        # self.fc2 = nn.Linear(128, 1)
 
     def forward(self, x):
         # set dim: (batch_size, max_seq_len, embedding_size) -> (batch_size, 1, max_seq_len, embedding_size)
 
         h = [nn.functional.relu(conv(x)).squeeze(3) for conv in self.conv_h]
-        v = [nn.functional.relu(conv(x)).squeeze(2) for conv in self.conv_v]
 
         # dim: [(batch_size, num_kernels), ...] * len(kernel_size)
         h = [nn.functional.max_pool1d(i, i.size(2)) for i in h]
         h = torch.cat(h, 1).squeeze(2)
 
-        v = [nn.functional.max_pool1d(i, i.size(2)).squeeze(2) for i in v]
-        v = torch.cat(v, 1)
-
-        # x = torch.cat((h, v), 1)
         x = self.dropout(h)
         x = self.fc1(x)
         # x = self.fc2(x)
@@ -52,7 +43,7 @@ class Trainer:
     def __init__(self, args):
         self.device = args.device
         self.epochs = args.epochs
-        self.model = CNN(100, [3, 4, 5])
+        self.model = CNN(100, [20, 30, 40])
 
         self.dataset = args.dataset
         self.optimizer = optim.Adam(
@@ -61,7 +52,6 @@ class Trainer:
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.1, patience=10
         )
-        self.loss = args.loss
         # data loader
         self.trn_loader, self.dev_loader, self.tst_loader = get_dataloader(
             csv_path=args.csv_path,
@@ -69,7 +59,6 @@ class Trainer:
             label_type=args.label_type,
             iid=args.iid,
             transform=args.norm_type,
-            img_size=args.img_size,
         )
 
         # set path
@@ -78,7 +67,7 @@ class Trainer:
         )
         os.makedirs(self.model_path, exist_ok=True)
 
-    def classification(self):
+    def regression(self):
         # model
         self.model.to(self.device)
         # initial dev loss
@@ -92,7 +81,7 @@ class Trainer:
         for epoch in range(self.epochs):
             self._train_loop(epoch, criterion)
             best_loss = self._dev_loop(epoch, criterion, best_loss, model_path)
-        outer.update(1)
+            outer.update(1)
 
     def _train_loop(self, epoch, criterion):
         total_step = 0
@@ -144,7 +133,7 @@ class Trainer:
         self.scheduler.step(dev_loss)
 
         if dev_loss < best_loss:
-            best_epoch_log.set_description_str(f"The best model is saved, Loss: {dev_loss:.4f}")
+            best_epoch_log.set_description_str(f"Epoch: {epoch}, Loss: {dev_loss:.4f}")
             best_loss = dev_loss
             torch.save(
                 {
@@ -177,12 +166,12 @@ class Trainer:
                 desc="test steps",
                 total=len(self.tst_loader),
             ):
-                img, _, height = map(lambda x: x.to(self.device), batch)
+                img, label = map(lambda x: x.to(self.device), batch)
 
                 output = self.model(img)
 
-                maeloss = self.MAE(torch.tensor(output, device=img.device), height)
-                mapeloss = self.MAPE(torch.tensor(output, device=img.device), height)
+                maeloss = self.MAE(torch.tensor(output, device=img.device), label)
+                mapeloss = self.MAPE(torch.tensor(output, device=img.device), label)
 
                 loss_mae += maeloss.item()
                 loss_mape += mapeloss.item()
@@ -195,21 +184,21 @@ class Trainer:
     def baseline(self):
         with torch.no_grad():
             trn_mean = torch.zeros((len(self.trn_loader), 1), device=self.device)
-            for idx, (_, _, height) in tqdm(
+            for idx, (_, label) in tqdm(
                 enumerate(self.trn_loader),
                 desc="compute train mean",
                 total=len(self.trn_loader),
             ):
-                batch_height = height.to(self.device)
+                batch_height = label.to(self.device)
                 trn_mean[idx] = torch.mean(batch_height).item()
 
             trn_mean = torch.mean(trn_mean)
             mae = 0.0
             mape = 0.0
-            for step, (_, _, height) in tqdm(
+            for step, (_, label) in tqdm(
                 enumerate(self.tst_loader), desc="test step", total=len(self.tst_loader)
             ):
-                y_tst = height.to(self.device)
+                y_tst = label.to(self.device)
                 mean_value = torch.full_like(y_tst, trn_mean)
                 mae += self.MAE(mean_value, y_tst).item()
                 mape += self.MAPE(mean_value, y_tst).item()
@@ -260,8 +249,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--iid",
-        action="store_true",
-        default=False,
+        default=None,
         help="use argument for iid condition",
     )
     parser.add_argument(
@@ -270,19 +258,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--baseline", action="store_true", default=False, help="Train pretrained model"
     )
-    parser.add_argument("--loss", type=str, default="ce", choices=["ce", "soft_ce"])
-    parser.add_argument(
-        "--label-range",
-        type=int,
-        choices=[0, 1, 2],
-        help="0: minmax / 1: 10cm range / 2: 20cm range",
-    )
 
     args = parser.parse_args()
 
     args.csv_path = os.path.join(args.root_csv_path, f"{args.dataset}_data_label.csv")
     args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    args.data_type = "iid" if args.iid else "time"
+    args.data_type = "iid" if args.iid is not None else "time"
 
     if args.label_type == 0:
         print(" Set label as height")
@@ -293,17 +274,6 @@ if __name__ == "__main__":
     elif args.label_type == 2:
         print(" Set label as period")
         args.label_type = "period"
-    elif args.label_type == 3:
-        print(" Set label as classification")
-        args.label_type = "cls"
-
-    if args.label_range == 0:
-        print("Use min-median-max range")
-    elif args.label_range == 1:
-        args.num_classes = 20
-        print("Use 10cm range")
-    elif args.label_range == 2:
-        print("Use 20cm range")
 
     print("Modifying img path in csv file...")
     label_df = pd.read_csv(args.csv_path)
@@ -332,9 +302,5 @@ if __name__ == "__main__":
         print(f"MAE: {mae}")
         print(f"MAPE: {mape}")
     else:
-        print("Training CNN is started")
-        choices=["ResNet18", "DenseNet", "GoogLenet", "VGG"],
-        choices=["ResNet18", "DenseNet", "GoogLenet", "VGG"],
-        choices=["ResNet18", "DenseNet", "GoogLenet", "VGG"],
-        choices=["ResNet18", "DenseNet", "GoogLenet", "VGG"],
-        trainer.classification()
+        print("Training one-d CNN is started")
+        trainer.regression()
