@@ -148,7 +148,6 @@ if __name__=='__main__':
         for folder in folders:
             if os.path.isdir(os.path.join(args.data_path, folder)):
                 print(folder)
-                print(radar_df.index)
                 df = radar_df[folder[:10]]
 
                 # get images
@@ -283,10 +282,12 @@ if __name__=='__main__':
     df['time_phase'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
 
     # i.i.d condition
-    np.random.shuffle(unique_id)
-    trn_idx, dev_idx, tst_idx = np.split(
-        unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
-        )
-    df['iid_phase'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
+    for i in range(5):
+        np.random.shuffle(unique_id)
+        trn_idx, dev_idx, tst_idx = np.split(
+            unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
+            )
+        print(f'iid_phase{i}')
+        df[f'iid_phase_{i}'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
 
     df.to_csv(f'./{args.dataset}_data_label.csv', index=False)
