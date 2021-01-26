@@ -4,15 +4,16 @@ import pandas as pd
 
 
 def get_dataloader(
-    csv_path, batch_size, label_type, iid=False, transform=2, img_size=224, cls_range=1
+    csv_path, batch_size, label_type, iid=None, transform=2, img_size=224, cls_range=1
 ):
     df = pd.read_csv(csv_path)
 
-    if iid:
+    if iid is not None:
         # i.i.d condition
-        trn = df.loc[df["iid_phase"] == "train"]
-        dev = df.loc[df["iid_phase"] == "dev"]
-        tst = df.loc[df["iid_phase"] == "test"]
+        print(f"{iid}th i.i.d. label will be used")
+        trn = df.loc[df[f"iid_phase_{iid}"] == "train"]
+        dev = df.loc[df[f"iid_phase_{iid}"] == "dev"]
+        tst = df.loc[df[f"iid_phase_{iid}"] == "test"]
     else:
         # time series condition
         trn = df.loc[df["time_phase"] == "train"]
