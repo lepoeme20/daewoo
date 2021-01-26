@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 # from resnet import resnet34
 
-#sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import utils.functions as F
 from utils.build_dataloader import get_dataloader
 import pandas as pd
@@ -51,7 +51,8 @@ class Trainer:
                 transform=args.norm_type,
                 img_size=args.img_size
         )
-
+        
+        
         # set path
         self.model_path = f'./cnn_regressor/best_model/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}'
         os.makedirs(self.model_path, exist_ok=True)
@@ -106,7 +107,7 @@ class Trainer:
         for step, (inputs, labels) in enumerate(self.trn_loader):
             self.model.train()
             total_step += 1
-
+            #print(inputs.shape)
             #inputs = inputs.repeat(1,3,1,1) ##
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             if self.pretrain:
@@ -163,12 +164,12 @@ class Trainer:
 
     def inference(self):
         self.model.to(self.device)
-        self.model.fc = nn.Linear(self.model.fc.in_features, 1).to(self.device)
+        #self.model.fc = nn.Linear(self.model.fc.in_features, 1).to(self.device)
         loss_mae = 0.0
         loss_mape = 0.0
 
         # load the saved regressor
-        regressor_path = os.path.join(self.model_path, 'regressor.pt')
+        regressor_path = os.path.join(self.model_path, 'regressor_residual.pt')
         checkpoint = torch.load(regressor_path)
         # check DataParallel
         if isinstance(self.model, nn.DataParallel):
@@ -253,16 +254,16 @@ if __name__ == '__main__':
         default="E:/daewoo/dataset/",
     )
     parser.add_argument(
-        "--epochs", type=int, default=200, help="Batch size"
+        "--epochs", type=int, default=50, help="Batch size"
     )
     parser.add_argument(
         "--batch-size", type=int, default=32, help="Batch size"
     )
     parser.add_argument(
-        "--lr", type=float, default=0.0001, help="Batch size"
+        "--lr", type=float, default=0.001, help="Batch size"
     )
     parser.add_argument(
-        "--img-size", type=int, default=32, help="Batch size"
+        "--img-size", type=int, default=448, help="Batch size"
     )
     parser.add_argument(
         "--seed", type=int, default=22, help="seed number"
@@ -272,10 +273,10 @@ if __name__ == '__main__':
         help="0: Height, 1: Direction, 2: Period"
     )
     parser.add_argument(
-        "--iid", action="store_true", default=False, help="use argument for iid condition"
+        "--iid",default=False, help="use argument for iid condition"
     )
     parser.add_argument(
-        "--test", action="store_true", default=False, help="Perform Test only"
+        "--test", default=True, help="Perform Test only"
     )
     parser.add_argument(
         "--pretrain", action="store_true", default=False, help="Train pretrained model"
