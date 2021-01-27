@@ -287,7 +287,6 @@ if __name__=='__main__':
         trn_idx, dev_idx, tst_idx = np.split(
             unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
             )
-        print(f'iid_phase{i}')
         df[f'iid_phase_{i}'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
 
     df.to_csv(f'./{args.dataset}_data_label.csv', index=False)
