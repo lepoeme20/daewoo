@@ -1,6 +1,4 @@
 import os
-import sys
-import glob
 import argparse
 import random
 import numpy as np
@@ -21,15 +19,24 @@ def main(args):
     random.seed(args.seed)
     torch.utils.backcompat.broadcast_warning.enabled = True
 
-    trn_loader, dev_loader, _ = get_dataloader(args.csv_path, args.root_img_path, args.batch_size,
-                                               args.add_csv_path, args.add_root_img_path)
+    print(f"{args.iid}th i.i.d. label will be used\n")
+    trn_loader, dev_loader, _ = get_dataloader(args.use_weather_1, args.weather_1_csv_path, args.weather_1_root_img_path,
+                                               args.use_weather_4, args.weather_4_csv_path, args.weather_4_root_img_path,
+                                               args.img_split_type, args.iid, args.batch_size)
 
     # Log files
-    os.makedirs(args.save_root_path, exist_ok=True)
-    trn_log_loss = open((args.save_root_path + '/trn_log_loss.txt'), 'w')
-    dev_log_loss = open((args.save_root_path + '/dev_log_loss.txt'), 'w')
+    folder_name = 'result_source_'
+    if args.use_weather_1:
+        folder_name += '1'
+    if args.use_weather_4:
+        folder_name += '4'
+    folder_name += '_split_{}_seed_{}'.format(args.img_split_type, args.iid)
 
-    model = ConvLSTMModel(args.mem_size)
+    os.makedirs(os.path.join(args.save_root_path, folder_name), exist_ok=True)
+    trn_log_loss = open(os.path.join(args.save_root_path, folder_name, 'trn_log_loss.txt'), 'w')
+    dev_log_loss = open(os.path.join(args.save_root_path, folder_name, 'dev_log_loss.txt'), 'w')
+
+    model = ConvLSTMModel(args.mem_size, args.img_split_type)
     model.cuda()
 
     criterion = nn.MSELoss()
@@ -71,17 +78,17 @@ def main(args):
                 targets = targets.cuda()
 
                 outputs = model(inputs)
-                loss = criterion(outputs, targets)
+                loss = criterion(outputs, targets.unsqueeze(1))
 
                 val_epoch_loss += loss.item()
 
             val_avg_loss = val_epoch_loss / len(dev_loader)
-            print('Validation: Loss = {}'.format(val_avg_loss))
+            print('Validation: Loss = {}\n'.format(val_avg_loss))
 
             dev_log_loss.write('Validation Loss after {} epochs = {}\n'.format(epoch + 1, val_avg_loss))
             
             if val_avg_loss < best_loss:
-                torch.save(model.state_dict(), os.path.join(args.save_root_path, 'best_model.pt'))
+                torch.save(model.state_dict(), os.path.join(args.save_root_path, folder_name, 'best_model.pt'))
                 best_loss = val_avg_loss
 
         lr_scheduler.step()
@@ -93,21 +100,32 @@ def main(args):
 def __main__():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--num-epochs', type=int, default=50, help='Number of epochs')
+    parser.add_argument('--num-epochs', type=int, default=20, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--step-size', type=int, default=10, help='Learning rate decay step')
     parser.add_argument('--decay-rate', type=float, default=0.5, help='Learning rate decay rate')
-    parser.add_argument('--batch-size', type=int, default=32, help='Training batch size')
     parser.add_argument('--mem-size', type=int, default=256, help='ConvLSTM hidden state size')
     parser.add_argument('--save-root-path', type=str, default='./result/')
-    parser.add_argument('--csv-path', type=str, default='/media/heejeong/HDD2/project/daewoo/data/weather_4/wave_radar/weather_4_data_label.csv',
-                        help='Directory csv file of labels')
-    parser.add_argument('--root-img-path', type=str, default='/media/heejeong/HDD2/project/daewoo/data/weather_4/data_crop/',
-                        help='Directory folder of images')
-    parser.add_argument('--add-csv-path', type=str, default='/media/heejeong/HDD2/project/daewoo/data/weather_1/wave_radar/weather_1_data_label.csv',
-                        help='Directory csv file of labels')
-    parser.add_argument('--add-root-img-path', type=str, default='/media/heejeong/HDD2/project/daewoo/data/weather_1/data_crop/',
-                        help='Directory folder of images')
+    # 변경해야할 옵션
+    parser.add_argument('--batch-size', type=int, default=32, help='Training batch size')
+    parser.add_argument('--iid', type=int, default=0)
+    parser.add_argument('--img_split_type', type=int, default=0,
+                        help='0: img to 3 frames vertically | 1: img to 5 frames vertically | 2: img to 3 frames horizontally')
+    parser.add_argument('--use-weather-1', type=bool, default=True)
+    parser.add_argument('--use-weather-4', type=bool, default=True)
+    parser.add_argument('--weather-1-csv-path', type=str,
+                        default='/media/heejeong/HDD2/project/daewoo/data/weather_1/wave_radar/weather_1_data_label_seed.csv',
+                        help='Csv file directory of labels for weather1')
+    parser.add_argument('--weather-1-root-img-path', type=str,
+                        default='/media/heejeong/HDD2/project/daewoo/data/weather_1/data_crop/',
+                        help='Csv file directory of labels for weather1')
+    parser.add_argument('--weather-4-csv-path', type=str,
+                        default='/media/heejeong/HDD2/project/daewoo/data/weather_4/wave_radar/weather_4_data_label_seed.csv',
+                        help='Csv file directory of labels for weather4')
+    parser.add_argument('--weather-4-root-img-path', type=str,
+                        default='/media/heejeong/HDD2/project/daewoo/data/weather_4/data_crop/',
+                        help='Folder directory of images for weather4')
+
     args, _ = parser.parse_known_args()
 
     main(args)

@@ -4,20 +4,21 @@ from convlstm_cell import *
 
 
 class ConvLSTMModel(nn.Module):
-    def __init__(self, mem_size):
+    def __init__(self, mem_size, img_split_type):
         super(ConvLSTMModel, self).__init__()
-        self.mem_size = mem_size
-        
         self.resnet = models.resnet18(pretrained=False)
         self.resnet.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         self.convnet = nn.Sequential(*list(self.resnet.children())[:-2])
         self.resnet = None
-        self.convlstm = ConvLSTMCell(512, self.mem_size)
+        self.convlstm = ConvLSTMCell(512, mem_size)
 
         self.maxpool = nn.MaxPool2d(2)
         self.relu = nn.ReLU()
 
-        self.lin1 = nn.Linear(7 * 7 * 2 * self.mem_size, 1000)
+        if img_split_type == 2:
+            self.lin1 = nn.Linear(2 * 21 * 2 * mem_size, 1000)
+        else:
+            self.lin1 = nn.Linear(7 * 7 * 2 * mem_size, 1000)
         self.lin2 = nn.Linear(1000, 256)
         self.lin3 = nn.Linear(256, 1)
 
