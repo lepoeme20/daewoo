@@ -2,7 +2,7 @@
 
 dataset='weather_4'
 stride_tuple=(1 5 10)
-iid_tuple=(1 2)
+iid_tuple=(0 1 2)
 
 for iid in ${iid_tuple[@]}
 do

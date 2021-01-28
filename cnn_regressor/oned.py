@@ -75,7 +75,7 @@ class Trainer:
         # initial dev loss
         best_loss = 1000.0
         # model path
-        model_path = os.path.join(self.model_path, f"{self.trn_data}_{self.stride}.pt")
+        model_path = os.path.join(self.model_path, f"stride_{self.stride}.pt")
         # criterion
         criterion = nn.MSELoss()
 
