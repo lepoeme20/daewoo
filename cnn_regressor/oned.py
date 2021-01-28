@@ -15,10 +15,10 @@ from utils.build_dataloader import get_dataloader
 # construct 1d CNN model
 
 class CNN(nn.Module):
-    def __init__(self, kernel_num, kernel_size):
+    def __init__(self, kernel_num, kernel_size, stride):
         super().__init__()
         self.conv_h = nn.ModuleList(
-            [nn.Conv2d(1, kernel_num, (k, 1344), stride=5) for k in kernel_size]
+            [nn.Conv2d(1, kernel_num, (k, 1344), stride=stride) for k in kernel_size]
         )
         self.dropout = nn.Dropout(0.5)
         self.fc1 = nn.Linear(len(kernel_size) * kernel_num, 1)
@@ -43,7 +43,10 @@ class Trainer:
     def __init__(self, args):
         self.device = args.device
         self.epochs = args.epochs
-        self.model = CNN(100, [20, 30, 40])
+        self.stride = args.stride
+        self.trn_data = args.trn_dataset
+        self.tst_data = args.tst_dataset
+        self.model = CNN(100, [20, 30, 40], self.stride)
 
         self.dataset = args.dataset
         self.optimizer = optim.Adam(
@@ -53,8 +56,8 @@ class Trainer:
             self.optimizer, mode="min", factor=0.1, patience=10
         )
         # data loader
-        self.trn_loader, self.dev_loader, self.tst_loader = get_dataloader(
-            csv_path=args.csv_path,
+        self.trn_loader, self.dev_loader, _ = get_dataloader(
+            csv_path=args.trn_csv_path,
             batch_size=args.batch_size,
             label_type=args.label_type,
             iid=args.iid,
@@ -63,7 +66,7 @@ class Trainer:
 
         # set path
         self.model_path = (
-            f"./cnn_regressor/best_model/oned/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}"
+            f"./cnn_regressor/best_model/oned/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}/seed_{args.iid}"
         )
         os.makedirs(self.model_path, exist_ok=True)
 
@@ -73,7 +76,7 @@ class Trainer:
         # initial dev loss
         best_loss = 1000.0
         # model path
-        model_path = os.path.join(self.model_path, "oned.pt")
+        model_path = os.path.join(self.model_path, f"{self.trn_data}_{self.stride}.pt")
         # criterion
         criterion = nn.MSELoss()
 
@@ -147,12 +150,21 @@ class Trainer:
         return best_loss
 
     def inference(self):
+        # data loader
+        _, _, tst_loader = get_dataloader(
+            csv_path=args.tst_csv_path,
+            batch_size=args.batch_size,
+            label_type=args.label_type,
+            iid=args.iid,
+            transform=args.norm_type,
+        )
+
         self.model.to(self.device)
         loss_mae = 0.0
         loss_mape = 0.0
 
         # load the saved model
-        model_path = os.path.join(self.model_path, "oned.pt")
+        model_path = os.path.join(self.model_path, f"{self.trn_data}_{self.stride}.pt")
         checkpoint = torch.load(model_path)
         # check DataParallel
         if isinstance(self.model, nn.DataParallel):
@@ -162,9 +174,9 @@ class Trainer:
         self.model.eval()
         with torch.no_grad():
             for step, batch in tqdm(
-                enumerate(self.tst_loader),
+                enumerate(tst_loader),
                 desc="test steps",
-                total=len(self.tst_loader),
+                total=len(tst_loader),
             ):
                 img, label = map(lambda x: x.to(self.device), batch)
 
@@ -217,7 +229,8 @@ class Trainer:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="weather", help="csv file path")
+    parser.add_argument("--trn-dataset", type=str, default="weather", help="csv file path")
+    parser.add_argument("--tst-dataset", type=str, default="weather", help="csv file path")
     parser.add_argument(
         "--root-csv-path",
         type=str,
@@ -258,10 +271,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--baseline", action="store_true", default=False, help="Train pretrained model"
     )
+    parser.add_argument(
+        "--stride", type=int, choices=[1, 5, 10]
+    )
 
     args = parser.parse_args()
 
-    args.csv_path = os.path.join(args.root_csv_path, f"{args.dataset}_data_label.csv")
+    args.trn_csv_path = os.path.join(args.root_csv_path, f"{args.trn_dataset}_data_label.csv")
+    args.tst_csv_path = os.path.join(args.root_csv_path, f"{args.tst_dataset}_data_label.csv")
     args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.data_type = "iid" if args.iid is not None else "time"
 
