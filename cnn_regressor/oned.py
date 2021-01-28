@@ -48,7 +48,6 @@ class Trainer:
         self.tst_data = args.tst_dataset
         self.model = CNN(100, [20, 30, 40], self.stride)
 
-        self.dataset = args.dataset
         self.optimizer = optim.Adam(
             self.model.parameters(), lr=args.lr#, momentum=0.9, weight_decay=1e-3
         )
@@ -66,7 +65,7 @@ class Trainer:
 
         # set path
         self.model_path = (
-            f"./cnn_regressor/best_model/oned/{args.dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}/seed_{args.iid}"
+            f"./cnn_regressor/best_model/oned/{args.trn_dataset}/{args.label_type}/norm_{args.norm_type}/{args.data_type}/seed_{args.iid}"
         )
         os.makedirs(self.model_path, exist_ok=True)
 
