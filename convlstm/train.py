@@ -103,7 +103,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--num-epochs', type=int, default=1, help='Number of epochs')
+    parser.add_argument('--num-epochs', type=int, default=10, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--step-size', type=int, default=10, help='Learning rate decay step')
     parser.add_argument('--decay-rate', type=float, default=0.5, help='Learning rate decay rate')
