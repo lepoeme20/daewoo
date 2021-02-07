@@ -72,7 +72,7 @@ def main(args):
         result.to_csv(os.path.join(args.save_root_path, folder_name, file_name), index=False)
 
 
-def __main__():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mem-size', type=int, default=256, help='ConvLSTM hidden state size')
     parser.add_argument('--save-root-path', type=str, default='./result/')

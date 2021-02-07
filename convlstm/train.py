@@ -97,7 +97,7 @@ def main(args):
     dev_log_loss.close()
 
 
-def __main__():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--num-epochs', type=int, default=20, help='Number of epochs')
