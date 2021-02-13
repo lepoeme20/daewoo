@@ -6,7 +6,7 @@ from build_dataset import BuildDataset
 def get_dataloader(use_weather_1, weather_1_csv_path, weather_1_root_img_path,
                    use_weather_4, weather_4_csv_path, weather_4_root_img_path,
                    use_total_phase, weather_total_phase_csv_path,
-                   img_split_type, iid, batch_size):
+                   use_time_phase, img_split_type, iid, batch_size):
 
     # weather 1, 4 섞어서 분할한 csv file 사용시 
     if use_total_phase:
@@ -39,10 +39,15 @@ def get_dataloader(use_weather_1, weather_1_csv_path, weather_1_root_img_path,
         dev = df.loc[df["total_phase"] == "dev"]
         tst = df.loc[df["total_phase"] == "test"]
     else:
-        # i.i.d condition
-        trn = df.loc[df[f"iid_phase_{iid}"] == "train"]
-        dev = df.loc[df[f"iid_phase_{iid}"] == "dev"]
-        tst = df.loc[df[f"iid_phase_{iid}"] == "test"]
+        if use_time_phase:
+            trn = df.loc[df["time_phase"] == "train"]
+            dev = df.loc[df["time_phase"] == "dev"]
+            tst = df.loc[df["time_phase"] == "test"]
+        else:
+            # i.i.d condition
+            trn = df.loc[df[f"iid_phase_{iid}"] == "train"]
+            dev = df.loc[df[f"iid_phase_{iid}"] == "dev"]
+            tst = df.loc[df[f"iid_phase_{iid}"] == "test"]
 
     trn_dataset = BuildDataset(trn, img_split_type)
     dev_dataset = BuildDataset(dev, img_split_type)
