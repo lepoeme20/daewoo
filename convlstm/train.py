@@ -22,18 +22,22 @@ def main(args):
     trn_loader, dev_loader, _ = get_dataloader(args.use_weather_1, args.weather_1_csv_path, args.weather_1_root_img_path,
                                                args.use_weather_4, args.weather_4_csv_path, args.weather_4_root_img_path,
                                                args.use_total_phase, args.weather_total_phase_csv_path,
-                                               args.img_split_type, args.iid, args.batch_size)
+                                               args.use_time_phase, args.img_split_type, args.iid, args.batch_size)
     # Log files
     if args.use_total_phase:
         folder_name = 'result_source_total_phase'
         folder_name += '_split_{}'.format(args.img_split_type)
     else:
-        folder_name = 'result_source_'
-        if args.use_weather_1:
-            folder_name += '1'
-        if args.use_weather_4:
-            folder_name += '4'
-        folder_name += '_split_{}_seed_{}'.format(args.img_split_type, args.iid)
+        if args.use_time_phase:
+            folder_name = 'result_source_time_phase'
+            folder_name += '_split_{}'.format(args.img_split_type)
+        else:    
+            folder_name = 'result_source_'
+            if args.use_weather_1:
+                folder_name += '1'
+            if args.use_weather_4:
+                folder_name += '4'
+            folder_name += '_split_{}_seed_{}'.format(args.img_split_type, args.iid)
 
     os.makedirs(os.path.join(args.save_root_path, folder_name), exist_ok=True)
     trn_log_loss = open(os.path.join(args.save_root_path, folder_name, 'trn_log_loss.txt'), 'w')
@@ -114,9 +118,10 @@ if __name__ == '__main__':
     parser.add_argument('--iid', type=int, default=0)
     parser.add_argument('--img_split_type', type=int, default=0,
                         help='0: img to 3 frames vertically | 1: img to 5 frames vertically | 2: img to 3 frames horizontally')
-    parser.add_argument('--use-weather-1', type=bool, default=False)
+    parser.add_argument('--use-weather-1', type=bool, default=True)
     parser.add_argument('--use-weather-4', type=bool, default=False)
-    parser.add_argument('--use-total-phase', type=bool, default=True)
+    parser.add_argument('--use-total-phase', type=bool, default=False)
+    parser.add_argument('--use-time-phase', type=bool, default=True)
     parser.add_argument('--weather-1-csv-path', type=str,
                         default='/media/heejeong/HDD2/project/daewoo/data/weather_1/wave_radar/weather_1_data_label_seed.csv',
                         help='Csv file directory of labels for weather1')
