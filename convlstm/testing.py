@@ -56,7 +56,7 @@ def main(args):
                                                    True, args.img_split_type, args.iid, args.batch_size)
         
             data_loaders = {'time_phase': tst_loader_time}
-            results = {'total_phase': {'trues': np.array([]), 'preds': np.array([])}}
+            results = {'time_phase': {'trues': np.array([]), 'preds': np.array([])}}
         else:
             _, _, tst_loader_1 = get_dataloader(True, args.weather_1_csv_path, args.weather_1_root_img_path,
                                                 False, args.weather_4_csv_path, args.weather_4_root_img_path,
