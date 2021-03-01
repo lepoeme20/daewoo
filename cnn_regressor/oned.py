@@ -193,6 +193,15 @@ class Trainer:
         return loss_mae, loss_mape
 
     def baseline(self):
+        # data loader
+        _, _, tst_loader = get_dataloader(
+            csv_path=args.tst_csv_path,
+            batch_size=args.batch_size,
+            label_type=args.label_type,
+            iid=args.iid,
+            transform=args.norm_type,
+        )
+
         with torch.no_grad():
             trn_mean = torch.zeros((len(self.trn_loader), 1), device=self.device)
             for idx, (_, label) in tqdm(
@@ -207,7 +216,7 @@ class Trainer:
             mae = 0.0
             mape = 0.0
             for step, (_, label) in tqdm(
-                enumerate(self.tst_loader), desc="test step", total=len(self.tst_loader)
+                enumerate(tst_loader), desc="test step", total=len(tst_loader)
             ):
                 y_tst = label.to(self.device)
                 mean_value = torch.full_like(y_tst, trn_mean)
