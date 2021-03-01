@@ -19,10 +19,14 @@ def main(args):
     random.seed(args.seed)
     torch.utils.backcompat.broadcast_warning.enabled = True
 
-    trn_loader, dev_loader, _ = get_dataloader(args.use_weather_1, args.weather_1_csv_path, args.weather_1_root_img_path,
-                                               args.use_weather_4, args.weather_4_csv_path, args.weather_4_root_img_path,
-                                               args.use_total_phase, args.weather_total_phase_csv_path,
-                                               args.use_time_phase, args.img_split_type, args.iid, args.batch_size)
+    # trn_loader, dev_loader, _ = get_dataloader(args.use_weather_1, args.weather_1_csv_path, args.weather_1_root_img_path,
+    #                                            args.use_weather_4, args.weather_4_csv_path, args.weather_4_root_img_path,
+    #                                            args.use_total_phase, args.weather_total_phase_csv_path,
+    #                                            args.use_time_phase, args.img_split_type, args.iid, args.batch_size)
+    trn_loader, dev_loader, _ = get_dataloader(
+        args.brave_csv_path, args.brave_root_img_path, args.use_time_phase,
+        args.img_split_type, args.batch_size
+    )
     # Log files
     if args.use_total_phase:
         folder_name = 'result_source_total_phase'
@@ -114,14 +118,15 @@ if __name__ == '__main__':
     parser.add_argument('--mem-size', type=int, default=256, help='ConvLSTM hidden state size')
     parser.add_argument('--save-root-path', type=str, default='./result/')
     # 변경해야할 옵션
-    parser.add_argument('--batch-size', type=int, default=32, help='Training batch size')
+    parser.add_argument('--batch-size', type=int, default=16, help='Training batch size')
     parser.add_argument('--iid', type=int, default=0)
     parser.add_argument('--img_split_type', type=int, default=0,
                         help='0: img to 3 frames vertically | 1: img to 5 frames vertically | 2: img to 3 frames horizontally')
-    parser.add_argument('--use-weather-1', type=bool, default=True)
+    parser.add_argument('--use-weather-1', type=bool, default=False)
     parser.add_argument('--use-weather-4', type=bool, default=False)
+    parser.add_argument('--use-brave', type=bool, default=True)
     parser.add_argument('--use-total-phase', type=bool, default=False)
-    parser.add_argument('--use-time-phase', type=bool, default=True)
+    parser.add_argument('--use-time-phase', type=bool, default=False)
     parser.add_argument('--weather-1-csv-path', type=str,
                         default='/media/heejeong/HDD2/project/daewoo/data/weather_1/wave_radar/weather_1_data_label_seed.csv',
                         help='Csv file directory of labels for weather1')
@@ -136,8 +141,11 @@ if __name__ == '__main__':
                         help='Folder directory of images for weather4')
     parser.add_argument('--weather-total-phase-csv-path', type=str,
                         default='/media/heejeong/HDD2/project/daewoo/data/weather_1_4_data_label_seed.csv',
-                        help='Csv file directory of labels for weather1&4')              
-
+                        help='Csv file directory of labels for weather1&4')
+    parser.add_argument('--brave-csv-path', type=str,
+                        default='../preprocessing/brave_data_label.csv')
+    parser.add_argument('--brave-root-img-path', type=str,
+                        default='/media/lepoeme20/Data/projects/daewoo/hyundai_brave/crop_data')
     args, _ = parser.parse_known_args()
 
     main(args)
