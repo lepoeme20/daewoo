@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-from tqdm import tqdm
+from collections import defaultdict
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -22,27 +22,6 @@ def get_args():
     params, _ = parser.parse_known_args()
     return params
 
-def cal_time(time):
-    full_time = ''.join(time[:10].split('-')) + ''.join(time[11:].split(':'))
-    h = full_time[8:10]
-    m = full_time[10:12]
-    start_m = str(int(m)-2)
-    end_m = str(int(m)+2)
-    start_h, end_h = h, h
-    if start_m < "0":
-        start_m = str(int(start_m)+60)
-        start_h = str(int(h)-1)
-    if end_m > "59":
-        end_m = str(int(end_m)-60)
-        end_h = str(int(h)+1)
-
-    _start = ''.join((full_time[:8], start_h, full_time[10:]))
-    start = ''.join((_start[:10], start_m, _start[12:]))
-    _end = ''.join((full_time[:8], end_h, full_time[10:]))
-    end = ''.join((_end[:10], end_m, _end[12:]))
-
-    return start, end
-
 def set_phase(row, trn_idx, dev_idx, tst_idx):
     phase = None
     if row['label_idx'] in trn_idx:
@@ -58,7 +37,6 @@ def set_date_format(date):
     new_date = f'{split_date[0]}-{split_date[1]}-{split_date[2]} {split_date[3]}:{split_date[4]}'
     return new_date
 
-
 if __name__=='__main__':
     args = get_args()
 
@@ -67,44 +45,82 @@ if __name__=='__main__':
 
     if args.dataset == 'brave':
         # set radar_path and load WaveParam_2020.csv
-        # radar_path = '/media/lepoeme20/Data/projects/daewoo/brave/waveradar/WaveParam_2020.csv'
+        radar_path = './WaveParam_2021.csv'
         # set data_path
-        # data_path = '/media/lepoeme20/Data/projects/daewoo/brave/crop'
+        data_path = '/media/lepoeme20/Data/projects/daewoo/hyundai_brave'
 
-        radar_df = pd.read_csv(args.radar_path, index_col=None)
+        radar_df = pd.read_csv(radar_path, index_col=None)
         radar_df = radar_df.rename(columns={"Date&Time": "Date"})
+        radar_df = radar_df[radar_df[' SNR'] != 0.]
+
+        # change date column type to datetime
+        radar_df.Date = pd.to_datetime(radar_df.Date, format="%Y/%m/%d %H:%M")
 
         # set folder (date)
-        folders = sorted(os.listdir(args.data_path))
+        radar_df.set_index('Date', inplace=True)
+        folders = sorted([f for f in os.listdir(data_path) if '-' in f and f > '2020-10-22'])
+
+        # set rm img list
+        rm_df = pd.read_csv('./brave_rm.csv').iloc[:, 1:5]
+        remove_img_dict = defaultdict(list)
+
+        for k, v1, v2 in zip(rm_df.folder_name.values, rm_df.remove_start_image.values, rm_df.remove_end_image.values):
+            tmp = (v1, v2)
+            remove_img_dict[k].append(tmp)
 
         label_idx = 0
-        for folder in folders:
+        for i, folder in enumerate(folders):
             print(folder)
             # extract specific time and empty rows
-            df = radar_df[radar_df.Date.str.contains(folder[:10], case=False)]
-            df = df[df.Date.str[11:13] > '06']
-            df = df[df.Date.str[11:13] < '17']
-            radar = df[df[' SNR'] != 0.]
+            df = radar_df[folder[:10]]
 
             # get images
-            all_imgs = sorted(os.listdir(os.path.join(args.data_path, folder)))
-            _imgs = list(filter(lambda x: 7 <= int(x[8:10]) < 17, all_imgs))
+            all_imgs = sorted(os.listdir(os.path.join(data_path, folders[i])))
+            try:
+                all_imgs.extend(sorted(os.listdir(os.path.join(data_path, folders[i+1]))))
+            except IndexError:
+                pass
+
+            # remove unusable images
+            rm_imgs = []
+            for (start, end) in remove_img_dict[folders[i]]:
+                rm_imgs.extend(list(filter(lambda x: start <= x[:-4] <= end, all_imgs)))
+            try:
+                for (start, end) in remove_img_dict[folders[i+1]]:
+                    rm_imgs.extend(list(filter(lambda x: start <= x[:-4] <= end, all_imgs)))
+            except IndexError:
+                pass
+            all_imgs = list(filter(lambda x: x not in rm_imgs, all_imgs))
+            print(len(all_imgs))
 
             # create empty lists for append
             height_list, direction_list, period_list = [], [], []
             img_list, time_list, idx_list = [], [], []
 
-            for idx in range(radar.shape[0]):
-                time = radar['Date'].iloc[idx]
-                height = radar[' T.Hs'].iloc[idx]
-                direction = radar[' T.Dp'].iloc[idx]
-                period = radar[' T.Tp'].iloc[idx]
-                # get proper images
-                start, end = cal_time(time)
-                imgs = list(filter(lambda x: start <= x[:-6] <= end, _imgs))
+            for idx in range(df.shape[0]):
+                time = df.index[idx]
+                height = float(df[' T.Hs'].iloc[idx])
+                period = float(df[' T.Dp'].iloc[idx])
+                direction = float(df[' T.Tp'].iloc[idx])
+
+                # set time
+                # local time = UTC time + 9 hours
+                aligned_time = time + timedelta(hours=9)
+                start = datetime.strftime((aligned_time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                end = datetime.strftime((aligned_time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                imgs = list(filter(lambda x: start <= x[:-6] <= end, all_imgs))
+
                 # save images
-                image_path = [os.path.join(args.data_path, folder, impath) for impath in imgs]
+                file_list = os.listdir(os.path.join(data_path, folder))
+                image_path = []
+                for img_name in imgs:
+                    if img_name in file_list:
+                        path = os.path.join(data_path, folders[i], img_name)
+                    else:
+                        path = os.path.join(data_path, folders[i+1], img_name)
+                    image_path.append(path)
                 img_list.extend(image_path)
+
                 # save label
                 height_list.extend([height]*len(imgs))
                 direction_list.extend([direction]*len(imgs))
@@ -124,7 +140,7 @@ if __name__=='__main__':
             total_idx.extend(idx_list)
 
     elif args.dataset == 'weather_4':
-        # radar_path = '/media/lepoeme20/Data/projects/daewoo/weather/wavex_11.csv'
+        # radar_path = '/Volumes/lepoeme/daewoo/weather_new/wavex_11.csv'
         # set data_path
         # data_path = '/media/lepoeme20/Data/projects/daewoo/weather/data'
 
@@ -146,64 +162,63 @@ if __name__=='__main__':
 
         label_idx = 0
         for folder in folders:
-            if os.path.isdir(os.path.join(args.data_path, folder)):
-                print(folder)
-                df = radar_df[folder[:10]]
+            print(folder)
+            df = radar_df[folder[:10]]
 
-                # get images
-                all_imgs = sorted(os.listdir(os.path.join(args.data_path, folder)))
+            # get images
+            all_imgs = sorted(os.listdir(os.path.join(args.data_path, folder)))
 
-                # create empty lists for append
-                height_list, direction_list, period_list = [], [], []
-                img_list, time_list, idx_list = [], [], []
+            # create empty lists for append
+            height_list, direction_list, period_list = [], [], []
+            img_list, time_list, idx_list = [], [], []
 
-                for idx in range(radar_df.shape[0]):
-                    # time = datetime.strftime(radar_df.index[0], "%Y%m%d%H%M%S")
-                    time = radar_df.index[idx]
-                    height = float(radar_df['Hm0'].iloc[idx])
-                    period = float(radar_df['Tm02'].iloc[idx])
-                    direction = float(radar_df['Dp1-t'].iloc[idx])
+            for idx in range(radar_df.shape[0]):
+                # time = datetime.strftime(radar_df.index[0], "%Y%m%d%H%M%S")
+                time = radar_df.index[idx]
+                height = float(radar_df['Hm0'].iloc[idx])
+                period = float(radar_df['Tm02'].iloc[idx])
+                direction = float(radar_df['Dp1-t'].iloc[idx])
 
-                    # set time
-                    # local time = UTC time + 9 hours
-                    # 기상 1호는 할 필요 없음 
-                    # aligned_time = time + timedelta(hours=9)
-                    # start = datetime.strftime((aligned_time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                    # end = datetime.strftime((aligned_time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                    start = datetime.strftime((time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                    end = datetime.strftime((time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                    imgs = list(filter(lambda x: start <= x[:-6] <= end, all_imgs))
+                # set time
+                # local time = UTC time + 9 hours
+                # 기상 1호는 할 필요 없음 
+                # aligned_time = time + timedelta(hours=9)
+                # start = datetime.strftime((aligned_time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                # end = datetime.strftime((aligned_time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                start = datetime.strftime((time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                end = datetime.strftime((time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                imgs = list(filter(lambda x: start <= x[:-6] <= end, all_imgs))
 
-                    # save images
-                    image_path = [os.path.join(args.data_path, folder, impath) for impath in imgs]
-                    img_list.extend(image_path)
-                    # save label
-                    height_list.extend([height]*len(imgs))
-                    direction_list.extend([direction]*len(imgs))
-                    period_list.extend([period]*len(imgs))
-                    # save time
-                    time_list.extend([time]*len(imgs))
-                    # save label index for i.i.d. condition sampling
-                    idx_list.extend([label_idx]*len(imgs))
-                    label_idx += 1
+                # save images
+                image_path = [os.path.join(args.data_path, folder, impath) for impath in imgs]
+                img_list.extend(image_path)
+                # save label
+                height_list.extend([height]*len(imgs))
+                direction_list.extend([direction]*len(imgs))
+                period_list.extend([period]*len(imgs))
+                # save time
+                time_list.extend([time]*len(imgs))
+                # save label index for i.i.d. condition sampling
+                idx_list.extend([label_idx]*len(imgs))
+                label_idx += 1
 
-                # append data
-                total_img.extend(img_list)
-                total_time.extend(time_list)
-                total_height.extend(height_list)
-                total_direction.extend(direction_list)
-                total_period.extend(period_list)
-                total_idx.extend(idx_list)
+            # append data
+            total_img.extend(img_list)
+            total_time.extend(time_list)
+            total_height.extend(height_list)
+            total_direction.extend(direction_list)
+            total_period.extend(period_list)
+            total_idx.extend(idx_list)
 
     elif args.dataset == 'weather_1':
-        # radar_path = '/media/lepoeme20/Data/projects/daewoo/weather/wavex_11.csv'
+        # radar_path = '/Volumes/lepoeme/daewoo/weather_old/wavex_label_2018.csv'
         # set data_path
-        # data_path = '/media/lepoeme20/Data/projects/daewoo/weather/data'
+        # data_path = '/Volumes/lepoeme/daewoo/weather_new/weather_1'
 
         radar_df = pd.read_csv(args.radar_path, index_col=None)
         radar_df.DATE = [set_date_format(date) for date in radar_df.DATE.values]
         # change date column type to datetime
-        radar_df.DATE = pd.to_datetime(radar_df.DATE, format="%Y-%m-%d %H:%M")
+        radar_df.Date = pd.to_datetime(radar_df.DATE, format="%Y-%m-%d %H:%M")
 
         # set folder (date)
         folders = sorted(os.listdir(args.data_path))
@@ -211,46 +226,45 @@ if __name__=='__main__':
 
         label_idx = 0
         for folder in folders:
-            if os.path.isdir(os.path.join(args.data_path, folder)):
-                print(folder)
-                df = radar_df[folder]
+            print(folder)
+            df = radar_df[folder[:10]]
 
-                # get images
-                all_imgs = sorted(os.listdir(os.path.join(args.data_path, folder)))
+            # get images
+            all_imgs = sorted(os.listdir(os.path.join(args.data_path, folder)))
 
-                # create empty lists for append
-                height_list, direction_list, period_list = [], [], []
-                img_list, time_list, idx_list = [], [], []
+            # create empty lists for append
+            height_list, direction_list, period_list = [], [], []
+            img_list, time_list, idx_list = [], [], []
 
-                for idx in range(radar_df.shape[0]):
-                    # time = datetime.strftime(radar_df.index[0], "%Y%m%d%H%M%S")
-                    time = radar_df.index[idx]
-                    height = float(radar_df['SWH'].iloc[idx])
-                    period = float(radar_df['SWT'].iloc[idx])
-                    direction = float(radar_df['DIR'].iloc[idx])
+            for idx in range(radar_df.shape[0]):
+                # time = datetime.strftime(radar_df.index[0], "%Y%m%d%H%M%S")
+                time = radar_df.index[idx]
+                height = float(radar_df['SWH'].iloc[idx])
+                period = float(radar_df['SWT'].iloc[idx])
+                direction = float(radar_df['DIR'].iloc[idx])
 
-                    # set time
-                    # local time = UTC time + 9 hours
-                    # 기상 1호는 할 필요 없음 
-                    # aligned_time = time + timedelta(hours=9)
-                    # start = datetime.strftime((aligned_time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                    # end = datetime.strftime((aligned_time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                    start = datetime.strftime((time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                    end = datetime.strftime((time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
-                    imgs = list(filter(lambda x: start <= x[:-6] <= end, all_imgs))
+                # set time
+                # local time = UTC time + 9 hours
+                # 기상 1호는 할 필요 없음 
+                # aligned_time = time + timedelta(hours=9)
+                # start = datetime.strftime((aligned_time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                # end = datetime.strftime((aligned_time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                start = datetime.strftime((time - timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                end = datetime.strftime((time + timedelta(minutes=2, seconds=30)), "%Y%m%d%H%M%S")
+                imgs = list(filter(lambda x: start <= x[:-6] <= end, all_imgs))
 
-                    # save images
-                    image_path = [os.path.join(args.data_path, folder, impath) for impath in imgs]
-                    img_list.extend(image_path)
-                    # save label
-                    height_list.extend([height]*len(imgs))
-                    direction_list.extend([direction]*len(imgs))
-                    period_list.extend([period]*len(imgs))
-                    # save time
-                    time_list.extend([time]*len(imgs))
-                    # save label index for i.i.d. condition sampling
-                    idx_list.extend([label_idx]*len(imgs))
-                    label_idx += 1
+                # save images
+                image_path = [os.path.join(args.data_path, folder, impath) for impath in imgs]
+                img_list.extend(image_path)
+                # save label
+                height_list.extend([height]*len(imgs))
+                direction_list.extend([direction]*len(imgs))
+                period_list.extend([period]*len(imgs))
+                # save time
+                time_list.extend([time]*len(imgs))
+                # save label index for i.i.d. condition sampling
+                idx_list.extend([label_idx]*len(imgs))
+                label_idx += 1
 
             # append data
             total_img.extend(img_list)
@@ -270,23 +284,24 @@ if __name__=='__main__':
         'period': total_period,
         'label_idx': total_idx
     }
-    df = pd.DataFrame(data_dict)
+    final_df = pd.DataFrame(data_dict)
 
     np.random.seed(22)
 
     # Time Series
-    unique_id = np.unique(df['label_idx'])
+    unique_id = np.unique(final_df['label_idx'])
     trn_idx, dev_idx, tst_idx = np.split(
         unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
         )
-    df['time_phase'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
+    final_df['time_phase'] = final_df.apply(
+        lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
 
     # i.i.d condition
-    for i in range(5):
-        np.random.shuffle(unique_id)
-        trn_idx, dev_idx, tst_idx = np.split(
-            unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
-            )
-        df[f'iid_phase_{i}'] = df.apply(lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
+    np.random.shuffle(unique_id)
+    trn_idx, dev_idx, tst_idx = np.split(
+        unique_id, [int(.6*len(unique_id)), int(.8*len(unique_id))]
+        )
+    final_df['iid_phase'] = final_df.apply(
+        lambda row: set_phase(row, trn_idx, dev_idx, tst_idx), axis=1)
 
-    df.to_csv(f'./{args.dataset}_data_label.csv', index=False)
+    final_df.to_csv(f'./brave_data_label.csv', index=False)

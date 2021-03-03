@@ -1,93 +1,73 @@
 import cv2
-import os
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
-import pandas as pd
+from datetime import datetime, timedelta
+from glob import glob
+import pickle
 
-# set radar_path and load WaveParam_2020.csv
-radar_path = '/media/lepoeme20/Data/projects/daewoo/brave/waveradar/WaveParam_2020.csv'
-radar_df = pd.read_csv(radar_path, index_col=None).iloc[:, :2]
-radar_df = radar_df.rename(columns={"Date&Time": "Date"})
+def get_files(data_path, name):
+    print("**load files**")
+    files = sorted(glob(f"{data_path}/*/*"))
+    folder_num = len(files)
+    if name == 'lee':
+        return files[:int(folder_num*0.33)]
+    elif name == 'choi':
+        return files[int(folder_num*0.33): int(folder_num*0.66)]
+    else:
+        return files[int(folder_num*0.66):]
 
-# set data_path
-data_path = '/media/lepoeme20/Data/projects/daewoo/brave/data'
 
-# set folder (date)
-folder = '2020-05-18-1'
+def get_img_idx(files, interval=10):
+    img_name = [p.split('/')[-1].split('_')[0][:-2] for p in files]
+    print("**Convert str to datetime**")
+    img_time = [datetime.strptime(img.split("_")[0], '%Y%m%d%H%M') for img in img_name]
+    time = img_time[0]
+    idx = []
+    print("**get index**")
+    while time < img_time[-1]:
+        print(time)
+        try:
+            idx.append(np.where(np.array(img_time) == time)[0][0])
+        except:
+            pass
+        time += timedelta(minutes=interval)
 
-# extract specific time and empty rows
-df = radar_df[radar_df.Date.str.contains(folder[:10], case=False)]
-df = df[df.Date.str[11:13] > '06']
-df = df[df.Date.str[11:13] < '17']
-empty_radar = df[df[' SNR'] == 0.]
-
-# get images
-all_imgs = sorted(os.listdir(os.path.join(data_path, folder)))
-imgs = list(filter(lambda x: 7 <= int(x[8:10]) < 17, all_imgs))
-
-# create iterator
-idx = iter(np.linspace(0, len(imgs), 600, dtype=int))
-start = 0
-end = len(imgs)
-
-def show_image(idx):
+def show_image(files, idx, folder_name, time):
     '''
     Display a single image
     '''
-    img = cv2.imread(os.path.join(data_path, folder, imgs[idx]), cv2.IMREAD_COLOR)
+    folder_name = folder_name[idx]
+    time = time[idx]
+    img = cv2.imread(files[idx], cv2.IMREAD_COLOR)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     plt.imshow(img)
-    plt.show()
-    print(os.path.join(data_path, imgs[idx]), '\n{}/{}'.format(idx, len(imgs)))
+    plt.title(f"Folder: {folder_name}, Time: {time}")
+    # plt.show()
+    print(f"Folder: {folder_name}, Time: {time}, Idx: {idx}")
 
-def resizing(idx):
-    '''
-    Show resized image
-    '''
-    img = cv2.imread(os.path.join(data_path, imgs[idx]), cv2.IMREAD_COLOR)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = img[400:600, 400:]
-    img = cv2.resize(img, dsize=(224, 224))
-    plt.imshow(img)
-    plt.show()
+def restore_idx_iter(idx_iter, idx, restart_num=0):
+    n = np.where(np.array(idx) == restart_num)[0][0]
+    for _ in range(n+1):
+        idx_iter.__next__()
+    return idx_iter
 
-def get_empty_radar_images():
-    '''
-    print Time / Start image name / End image name
-    where there is no radar value
-    '''
-    time_list = [date[11:16] for date in empty_radar['Date']]
-    for time in time_list:
-        h = time[0:2]
-        start = str(int(time[3:])-5)
-        if start=='-5':
-            start = '55'
-            start_h = str(int(h)-1)
-            start_h = start_h if len(start_h) == 2 else '0'+start_h
-            start = start if len(start) == 2 else '0'+start
-            end = str(int(time[3:])+5)
-            end = end if len(end) == 2 else '0'+end
-            if start_h == '06':
-                start_name = ''.join(folder.split('-')[:3]) + '0700'
-            else:
-                start_name = ''.join(folder.split('-')[:3]) + start_h + start
-            end_name = ''.join(folder.split('-')[:3]) + h + end
-        else:
-            start = start if len(start) == 2 else '0'+start
-            end = str(int(time[3:])+5)
-            end = end if len(end) == 2 else '0'+end
-            start_name = ''.join(folder.split('-')[:3]) + h + start
-            end_name = ''.join(folder.split('-')[:3]) + h + end
-        try:
-            start_img = [s for s in imgs if start_name in s][0]
-            end_img = [s for s in imgs if end_name in s][0]
-            print("Time: {} \n start: {}\n end: {}\n".format(time, start_img, end_img))
-        except IndexError:
-            print(IndexError)
+def n_iter(idx_iter, idx, n_iter=10):
+    for _ in range(n_iter):
+        idx_iter.__next__()
+    return idx_iter
 
-get_empty_radar_images()
-show_image(next(idx))
-show_image(18141)
-# resizing(16) #확인용
+# set data_path
+data_path = '/media/lepoeme20/Data/projects/daewoo/brave/data'
+name = 'seo'
+files = get_files(data_path, name)
+folder_name = [p.split('/')[-2] for p in files]
+time = [p.split('/')[-1] for p in files]
+
+with open(f'./{name}_idx.pkl', 'rb') as f:
+    idx = pickle.load(f)
+
+idx_iter = iter(idx)
+idx_iter = restore_idx_iter(idx_iter, idx, restart_num=1592852)
+idx_iter = n_iter(idx_iter, idx, n_iter=30)
+show_image(files, next(iter(idx_iter)), folder_name, time)
