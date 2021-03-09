@@ -111,14 +111,14 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--num-epochs', type=int, default=10, help='Number of epochs')
+    parser.add_argument('--num-epochs', type=int, default=30, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--step-size', type=int, default=10, help='Learning rate decay step')
     parser.add_argument('--decay-rate', type=float, default=0.5, help='Learning rate decay rate')
     parser.add_argument('--mem-size', type=int, default=256, help='ConvLSTM hidden state size')
     parser.add_argument('--save-root-path', type=str, default='./result/')
     # 변경해야할 옵션
-    parser.add_argument('--batch-size', type=int, default=16, help='Training batch size')
+    parser.add_argument('--batch-size', type=int, default=32, help='Training batch size')
     parser.add_argument('--iid', type=int, default=0)
     parser.add_argument('--img_split_type', type=int, default=0,
                         help='0: img to 3 frames vertically | 1: img to 5 frames vertically | 2: img to 3 frames horizontally')
