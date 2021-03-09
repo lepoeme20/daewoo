@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
+import torchvision.transforms.functional as TF
 
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
@@ -73,4 +74,5 @@ class BuildDataset(Dataset):
         frame /= std
 
         frame = transforms.ToPILImage()(frame)
+        frame = TF.rotate(frame, 7)
         return transforms.ToTensor()(np.array(frame))
