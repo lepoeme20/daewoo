@@ -9,7 +9,7 @@ def get_dataloader(
 
     df = pd.read_csv(brave_csv_path)
     df["image"] = df["image"].str.replace(
-        '/Volumes/lepoeme/daewoo/hyundai_brave', brave_root_img_path)
+        '/media/lepoeme20/Data/projects/daewoo/hyundai_brave', brave_root_img_path)
 
     if use_time_phase:
         trn = df.loc[df["time_phase"] == "train"]
