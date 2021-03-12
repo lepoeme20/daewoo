@@ -43,9 +43,10 @@ def main(args):
                 folder_name += '4'
             folder_name += '_split_{}_seed_{}'.format(args.img_split_type, args.iid)
 
-    os.makedirs(os.path.join(args.save_root_path, folder_name), exist_ok=True)
-    trn_log_loss = open(os.path.join(args.save_root_path, folder_name, 'trn_log_loss.txt'), 'w')
-    dev_log_loss = open(os.path.join(args.save_root_path, folder_name, 'dev_log_loss.txt'), 'w')
+    save_path = os.path.join(args.save_root_path, folder_name, f'time_{args.use_time_phase}')
+    os.makedirs(save_path, exist_ok=True)
+    trn_log_loss = open(os.path.join(save_path, 'trn_log_loss.txt'), 'w')
+    dev_log_loss = open(os.path.join(save_path, 'dev_log_loss.txt'), 'w')
 
     model = ConvLSTMModel(args.mem_size, args.img_split_type)
     model.cuda()
@@ -99,7 +100,7 @@ def main(args):
             dev_log_loss.write('Validation Loss after {} epochs = {}\n'.format(epoch + 1, val_avg_loss))
             
             if val_avg_loss < best_loss:
-                torch.save(model.state_dict(), os.path.join(args.save_root_path, folder_name, 'best_model.pt'))
+                torch.save(model.state_dict(), os.path.join(save_path, 'best_model.pt'))
                 best_loss = val_avg_loss
 
         lr_scheduler.step()
@@ -126,7 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--use-weather-4', type=bool, default=False)
     parser.add_argument('--use-brave', type=bool, default=True)
     parser.add_argument('--use-total-phase', type=bool, default=False)
-    parser.add_argument('--use-time-phase', type=bool, default=False)
+    parser.add_argument('--use-time-phase', type=bool, default=True)
     parser.add_argument('--weather-1-csv-path', type=str,
                         default='/media/heejeong/HDD2/project/daewoo/data/weather_1/wave_radar/weather_1_data_label_seed.csv',
                         help='Csv file directory of labels for weather1')
