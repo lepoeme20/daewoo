@@ -12,6 +12,10 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # Hyper parameters
 csv_path = '../data/weather_data_label.csv'
 root_img_path = '/media/heejeong/HDD1/daewoo/data/weather/'
+save_path = 'model_Adam.pt'
+csv_save_path = 'result_Adam.csv'
+
+ker_size = 9
 img_size = 32
 P = 3
 Q = 3
@@ -22,7 +26,6 @@ learning_rate = 0.001
 momentum = 0.9
 weight_decay = 0.9
 seed = 42
-save_path = './ckpt/model_Adam_9kersize.pt'
 
 # Seed
 torch.manual_seed(seed)
@@ -73,7 +76,7 @@ class CNN(nn.Module):
 
         return q
 
-model = CNN(ker_size=9, n_kers=50, n1_nodes=800, n2_nodes=800)
+model = CNN(ker_size=ker_size, n_kers=50, n1_nodes=800, n2_nodes=800)
 model = model.to(device)
 
 # Loss and optimizer
@@ -124,9 +127,6 @@ for epoch in range(num_epochs):
             torch.save(model.state_dict(), save_path)
 
 
-
-
-
 # Test the model
 import pandas as pd
 from sklearn.metrics import mean_squared_error, mean_absolute_error
@@ -160,28 +160,4 @@ with torch.no_grad():
 result = pd.DataFrame()
 result['true'] = list(trues)
 result['pred'] = list(preds)
-result.to_csv('result_Adam_9kersize.csv', index=False)
-
-
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-data = pd.read_csv('result_Adam_7kersize_0.001lr.csv')
-
-plt.figure(figsize=(12, 5))
-plt.scatter(np.arange(len(data)), data['pred'], c='red', s=1)
-plt.scatter(np.arange(len(data)), data['true'], c='blue', s=1)
-plt.legend()
-
-df = pd.read_csv(csv_path)
-trn = df.loc[df["iid_phase"] == "train"]
-dev = df.loc[df["iid_phase"] == "dev"]
-tst = df.loc[df["iid_phase"] == "test"]
-
-plt.figure(figsize=(12, 5))
-plt.scatter(trn.index, trn['height'], c='blue')
-plt.scatter(dev.index, dev['height'], c='red')
-plt.scatter(tst.index, tst['height'], c='green')
-plt.legend()
+result.to_csv(csv_save_path, index=False)
